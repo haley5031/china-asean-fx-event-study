@@ -1,0 +1,35 @@
+\begin{table}
+\centering
+\begin{talltblr}[         %% tabularray outer open
+caption={Heterogeneity Results: Country Differences Relative to Indonesia},
+note{}={* p < 0.1, ** p < 0.05, *** p < 0.01},
+note{ }={Reference category is Indonesia.},
+note{  }={All models use the [0,+1] event window and 2008--2020 main sample.},
+note{   }={Standard errors are clustered by date.},
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]},
+hline{2}={1-3}{solid, black, 0.05em},
+hline{14}={1-3}{solid, black, 0.05em},
+hline{1}={1-3}{solid, black, 0.08em},
+hline{16}={1-3}{solid, black, 0.08em},
+column{2-3}={}{halign=c},
+column{1}={}{halign=l},
+}                     %% tabularray inner close
+& FE Heterogeneity (1Y) & FE Heterogeneity (5Y) \\
+Indonesia baseline shock (1Y) & 1.096 &  \\
+& (0.790) &  \\
+Indonesia baseline shock (5Y) &  & 0.946 \\
+&  & (0.732) \\
+Malaysia relative to Indonesia & -1.125 & -1.015 \\
+& (0.765) & (0.776) \\
+Philippines relative to Indonesia & -0.353 & -0.528 \\
+& (0.769) & (0.948) \\
+Singapore relative to Indonesia & -1.196* & -1.541** \\
+& (0.666) & (0.709) \\
+Thailand relative to Indonesia & -0.761 & -0.405 \\
+& (0.891) & (0.751) \\
+Num.Obs. & 13017 & 13017 \\
+R2 & 0.001 & 0.001 \\
+\end{talltblr}
+\end{table}

@@ -1,0 +1,21 @@
+# R / RStudio
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj.user
+.DS_Store
+
+# --- Raw third-party data --------------------------------------------------
+# Both raw data sources may be redistributed:
+#  - data-raw/policy/ : MIT-licensed (wtsong/china_mpshocks).
+#  - data-raw/fx/     : IMF Exchange Rate Data, redistribution permitted under
+#    the IMF "Use of IMF Data" terms with attribution + disclosure of the
+#    BSP backfill transformation. See data-raw/fx/SOURCE_AND_LICENSE.md.
+# Both are therefore kept under version control.
+
+# Keep tables and figures under version control for supervisor review,
+# but ignore any other generated output and the fitted-model cache.
+output/*
+!output/tables/
+!output/figures/
+output/models.rds

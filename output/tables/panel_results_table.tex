@@ -1,0 +1,28 @@
+\begin{table}
+\centering
+\begin{talltblr}[         %% tabularray outer open
+caption={Pooled and Fixed-Effects Results},
+note{}={* p < 0.1, ** p < 0.05, *** p < 0.01},
+note{ }={Pooled OLS models include country indicators.},
+note{  }={FE models include country fixed effects and standard errors clustered by date.},
+note{   }={All models use the [0,+1] event window over the 2008--2020 main sample.},
+]                     %% tabularray outer close
+{                     %% tabularray inner open
+colspec={Q[]Q[]Q[]Q[]Q[]},
+hline{2}={1-5}{solid, black, 0.05em},
+hline{6}={1-5}{solid, black, 0.05em},
+hline{1}={1-5}{solid, black, 0.08em},
+hline{9}={1-5}{solid, black, 0.08em},
+column{2-5}={}{halign=c},
+column{1}={}{halign=l},
+}                     %% tabularray inner close
+& Pooled OLS (1Y) & Pooled OLS (5Y) & FE (1Y) & FE (5Y) \\
+Chinese MP shock (1Y) & 0.399 &  & 0.399 &  \\
+& (0.293) &  & (0.373) &  \\
+Chinese MP shock (5Y) &  & 0.237 &  & 0.237 \\
+&  & (0.310) &  & (0.306) \\
+Num.Obs. & 13017 & 13017 & 13017 & 13017 \\
+R2 & 0.001 & 0.001 & 0.001 & 0.001 \\
+F & 1.587 & 1.333 &  &  \\
+\end{talltblr}
+\end{table}
