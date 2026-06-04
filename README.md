@@ -1,6 +1,6 @@
 # Chinese Monetary Policy Shocks and ASEAN-5 Exchange Rates: A Daily Event Study
 
-Code, cleaned-data workflow, and draft materials for a master's thesis on
+Code, cleaned-data workflow, and draft materials for my master's thesis on
 whether Chinese monetary policy shocks generate measurable short-run effects in
 ASEAN-5 (Philippines, Malaysia, Thailand, Indonesia, Singapore) exchange rates.
 
