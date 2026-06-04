@@ -25,9 +25,18 @@ paths <- list(
   raw_policy   = "data-raw/policy",
   raw_fx       = "data-raw/fx",
   clean        = "data-clean",
+  output_root  = "output",
   out_tables   = "output/tables",
   out_figures  = "output/figures"
 )
+
+# Create output directories if missing. git does not track empty folders, so a
+# fresh clone may not contain output/tables and output/figures yet. Creating
+# them here means every script can write its outputs without a prior step
+# having to exist first.
+for (d in c(paths$clean, paths$output_root, paths$out_tables, paths$out_figures)) {
+  if (!dir.exists(d)) dir.create(d, recursive = TRUE, showWarnings = FALSE)
+}
 
 # --- Shared constants --------------------------------------------------------
 # Main estimation sample. Defined once so every script and the write-up agree.

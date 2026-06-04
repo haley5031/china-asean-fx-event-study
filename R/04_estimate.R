@@ -50,5 +50,5 @@ models <- list(
   fe_het_5y   = fe_het_5y
 )
 
-saveRDS(models, file.path(paths$out_tables, "..", "models.rds"))
+saveRDS(models, file.path(paths$output_root, "models.rds"))
 message("Estimated and saved ", length(models), " model groups to output/models.rds")
