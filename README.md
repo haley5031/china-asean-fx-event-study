@@ -37,8 +37,7 @@ fixed-effects heterogeneity (interactions, Indonesia as reference).
 │   └── figures/
 └── docs/
     ├── data_dictionary.md
-    ├── source_log.md
-    └── draft/             # thesis PDF + results PDF
+    └──source_log.md
 ```
 
 ## How to run
