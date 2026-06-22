@@ -20,6 +20,12 @@ fx_returns  <- read_csv(file.path(paths$clean, "fx_returns_wide.csv"),
 policy_main <- read_csv(file.path(paths$clean, "policy_shocks_main.csv"),
                         show_col_types = FALSE)
 
+# Guard against a many-to-many merge: the join below assumes at most one main
+# shock row per date. If a future re-export of china_mpshocks ever has two
+# isMain rows on the same day, the left_join would silently multiply rows.
+if (any(duplicated(policy_main$date)))
+  stop("policy_shocks_main.csv has duplicate dates -- merge onto fx_panel would fan out.")
+
 # --- Reshape to long country-date panel --------------------------------------
 fx_panel <- fx_returns %>%
   select(date, idr, myr, php, sgd, thb,
@@ -50,6 +56,8 @@ reg_data0 <- fx_panel %>%
     across(c(isdRRR, isdRevrepo, isdLDR, isdMLF, isMPR, isFX, isTMLF),
            ~ if_else(is.na(.x), FALSE, .x))
   )
+
+stopifnot("merge changed row count (many-to-many join?)" = nrow(reg_data0) == nrow(fx_panel))
 
 write_csv(reg_data0, file.path(paths$clean, "reg_data0.csv"))
 
