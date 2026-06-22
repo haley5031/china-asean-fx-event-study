@@ -31,7 +31,8 @@ fixed-effects heterogeneity (interactions, Indonesia as reference).
 │   ├── 02_clean_fx.R      # raw FX workbook -> clean levels + returns
 │   ├── 03_build_panel.R   # reshape, merge shocks, event windows
 │   ├── 04_estimate.R      # all models -> output/models.rds
-│   └── 05_tables_figures.R# tables (HTML/LaTeX) + figure
+│   ├── 05_tables_figures.R# tables (HTML/LaTeX) + figure
+│   └── 06_window_robustness.R # [0]/[0,+1]/[-1,+1] ladder, 1Y + 5Y shocks
 ├── output/
 │   ├── tables/
 │   └── figures/
@@ -47,6 +48,26 @@ fixed-effects heterogeneity (interactions, Indonesia as reference).
 
 Scripts can also be run individually in numbered order; each sources
 `00_setup.R` first.
+
+## Known limitations (researcher judgment, not coding errors)
+- **Unmatched shock dates.** 31 of 102 main shock dates (about 30%) fall on a
+  day with no FX observation (non-trading day) and are simply dropped by the
+  join in `03_build_panel.R` -- they are not shifted to the nearest trading
+  day. This is a defensible design choice but means some announcements never
+  enter the estimation sample.
+- **Overlapping `[0,+1]` windows.** A few main-sample shock dates are one
+  trading day apart (e.g. 2012-07-03/2012-07-05 and 2015-08-26 and its
+  successor), so one event's `+1` day is the next event's `0` day. The
+  `fx_return_01` outcome for the earlier event therefore partly reflects the
+  later shock. This affects a small number of observations and is a standard
+  event-study trade-off, not a bug; it is not corrected automatically because
+  doing so (e.g. dropping or truncating one of the two windows) is a
+  methodological choice for the researcher to make explicitly.
+- **Country-specific FX holidays.** The FX panel carries `NA` returns (not
+  dropped rows) on days a given country's market was closed but at least one
+  other ASEAN-5 market traded, so per-country sample sizes in `country_ols`
+  differ slightly; this is intentional and handled by `lm()`/`feols()`
+  list-wise deletion.
 
 ## Status
 Cleaned FX and shock data, merged estimation panel, and all baseline, pooled,

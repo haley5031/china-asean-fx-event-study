@@ -32,5 +32,8 @@ are retained as provenance for that workbook.
 
 ## Outputs (`output/`)
 - `models.rds` — fitted model objects (from 04)
-- `tables/` — regression tables, HTML + LaTeX (from 05)
+- `tables/` — regression tables, HTML + LaTeX (from 05 and 06)
 - `figures/` — country coefficient plot (from 05)
+- `tables/window_robustness_fe_shock_1y.{html,tex}`,
+  `tables/window_robustness_fe_shock_5y.{html,tex}` — FE estimates across the
+  `[0]`, `[0,+1]`, `[-1,+1]` windows for each shock measure (from 06)
