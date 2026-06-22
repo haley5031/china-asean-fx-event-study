@@ -19,7 +19,6 @@ fixed-effects heterogeneity (interactions, Indonesia as reference).
 ```
 .
 ├── run_all.R              # rebuild everything, top to bottom
-├── CLAUDE.md              # standing rules for the repo
 ├── *.Rproj
 ├── data-raw/              # source files — never written to by scripts
 │   ├── policy/
