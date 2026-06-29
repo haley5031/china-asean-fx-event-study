@@ -33,7 +33,20 @@ are retained as provenance for that workbook.
 ## Outputs (`output/`)
 - `models.rds` — fitted model objects (from 04)
 - `tables/` — regression tables, HTML + LaTeX (from 05 and 06)
-- `figures/` — country coefficient plot (from 05)
 - `tables/window_robustness_fe_shock_1y.{html,tex}`,
   `tables/window_robustness_fe_shock_5y.{html,tex}` — FE estimates across the
   `[0]`, `[0,+1]`, `[-1,+1]` windows for each shock measure (from 06)
+- `tables/event_subset_comparison.csv` — baseline vs. event-subset FE
+  coefficient/SE comparison (from 07, exploratory only)
+- `figures/fig1_fx_indexed.{pdf,png}` — ASEAN-5 FX indexed to 100 at the
+  first 2008 trading day (from `fig_fx_series.R`)
+- `figures/fig2_shock_stem.{pdf,png}` — Chinese MP surprise stem plot,
+  main event set, basis points (from `fig_shock_stem.R`)
+- `figures/fig3_cumulative_response.{pdf,png}` — pooled average cumulative
+  ASEAN-5 FX response with 95% CI band (from `fig_cumulative_response.R`)
+- `figures/fig_attrition_funnel.{pdf,png}` — sample-construction attrition
+  funnel, 102 -> 71 -> 65 -> 56 (from `fig_attrition_funnel.R`)
+- `figures/fig3a_forest_country.{pdf,png}` — Table 1 country-level betas
+  with 95% CIs (from `fig_forest_country.R`)
+- `figures/fig3b_forest_heterogeneity.{pdf,png}` — Table 3 heterogeneity
+  interactions with 95% CIs (from `fig_forest_heterogeneity.R`)
