@@ -30,8 +30,16 @@ fixed-effects heterogeneity (interactions, Indonesia as reference).
 │   ├── 02_clean_fx.R      # raw FX workbook -> clean levels + returns
 │   ├── 03_build_panel.R   # reshape, merge shocks, event windows
 │   ├── 04_estimate.R      # all models -> output/models.rds
-│   ├── 05_tables_figures.R# tables (HTML/LaTeX) + figure
-│   └── 06_window_robustness.R # [0]/[0,+1]/[-1,+1] ladder, 1Y + 5Y shocks
+│   ├── 05_tables_figures.R# regression tables (HTML/LaTeX)
+│   ├── 06_window_robustness.R # [0]/[0,+1]/[-1,+1] ladder, 1Y + 5Y shocks
+│   ├── fig_theme.R        # shared font/palette/dims for every figure
+│   ├── fig_fx_series.R    # Fig 1: ASEAN-5 indexed FX series
+│   ├── fig_shock_stem.R   # Fig 2: Chinese MP surprise stem plot
+│   ├── fig_cumulative_response.R # Fig 3: pooled cumulative FX response
+│   ├── fig_attrition_funnel.R    # sample-construction attrition funnel
+│   ├── fig_forest_country.R      # Fig 3a: country-level forest plot
+│   ├── fig_forest_heterogeneity.R# Fig 3b: heterogeneity forest plot
+│   └── 07_event_subset.R  # exploratory: FE re-estimated on event dates only
 ├── output/
 │   ├── tables/
 │   └── figures/
@@ -70,8 +78,11 @@ Scripts can also be run individually in numbered order; each sources
 
 ## Status
 Cleaned FX and shock data, merged estimation panel, and all baseline, pooled,
-fixed-effects, and heterogeneity models are in place. Preliminary tables and a
-coefficient figure are generated. Rough draft under revision.
+fixed-effects, and heterogeneity models are in place. Tables, the full figure
+set (indexed FX series, shock stem plot, cumulative response, attrition
+funnel, and two forest plots), and an exploratory event-subset re-estimation
+(`07_event_subset.R`, not yet wired into the thesis) are generated. Rough
+draft under revision.
 
 ## Author
 Haley J. Fennyery — Erasmus Mundus Joint Master's Degree, Economics of
