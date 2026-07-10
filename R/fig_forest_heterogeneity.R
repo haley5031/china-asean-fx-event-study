@@ -41,7 +41,7 @@ p <- ggplot(het_df, aes(x = estimate, y = label)) +
   geom_errorbar(aes(xmin = lower, xmax = upper, colour = significant),
                 width = 0.15, linewidth = 0.6) +
   geom_point(aes(colour = significant), size = 2.5) +
-  scale_colour_manual(values = c(`TRUE` = "#d95f02", `FALSE` = "grey55"),
+  scale_colour_manual(values = c(`TRUE` = HIGHLIGHT_COLOR, `FALSE` = NEUTRAL_COLOR),
                        guide = "none") +
   labs(
     title    = "Heterogeneity in FX Response to Chinese MP Shocks",

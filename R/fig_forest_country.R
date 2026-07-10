@@ -36,7 +36,7 @@ p <- ggplot(coef_df, aes(x = estimate, y = country)) +
   geom_errorbar(aes(xmin = lower, xmax = upper, colour = significant),
                 width = 0.15, linewidth = 0.6) +
   geom_point(aes(colour = significant), size = 2.5) +
-  scale_colour_manual(values = c(`TRUE` = "#d95f02", `FALSE` = "grey55"),
+  scale_colour_manual(values = c(`TRUE` = HIGHLIGHT_COLOR, `FALSE` = NEUTRAL_COLOR),
                        guide = "none") +
   labs(
     title    = "Country-Level Exchange Rate Responses to Chinese MP Shocks",

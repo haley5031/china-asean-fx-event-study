@@ -61,12 +61,13 @@ car_summary <- car_df %>%
 
 p <- ggplot(car_summary, aes(x = rel_day, y = mean_car)) +
   annotate("rect", xmin = HIGHLIGHT[1] - 0.5, xmax = HIGHLIGHT[2] + 0.5,
-           ymin = -Inf, ymax = Inf, fill = "#1b9e77", alpha = 0.10) +
+           ymin = -Inf, ymax = Inf, fill = ACCENT_COLOR, alpha = 0.10) +
   geom_hline(yintercept = 0, colour = "grey50", linetype = "dashed") +
-  geom_ribbon(aes(ymin = lower, ymax = upper), fill = "#1b9e77", alpha = 0.25) +
-  geom_line(colour = "#1b9e77", linewidth = 0.7) +
-  geom_point(colour = "#1b9e77", size = 1.6) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), fill = ACCENT_COLOR, alpha = 0.25) +
+  geom_line(colour = ACCENT_COLOR, linewidth = 0.7) +
+  geom_point(colour = ACCENT_COLOR, size = 1.6) +
   scale_x_continuous(breaks = REL_WINDOW) +
+  scale_y_continuous(labels = label_pct_thesis) +
   labs(
     title    = "Average Cumulative ASEAN-5 FX Response to Chinese MP Shocks",
     subtitle = "Pooled across countries and main-sample events; normalized to zero at t-1; shaded band is 95% CI",

@@ -16,8 +16,10 @@ shocks <- read_csv(file.path(paths$clean, "policy_shocks_main.csv"), show_col_ty
 
 p <- ggplot(shocks, aes(x = date, y = shock_1y_bps)) +
   geom_hline(yintercept = 0, colour = "grey50") +
-  geom_segment(aes(xend = date, yend = 0), colour = "#1b9e77", linewidth = 0.4) +
-  geom_point(colour = "#1b9e77", size = 1.3) +
+  geom_segment(aes(xend = date, yend = 0), colour = ACCENT_COLOR, linewidth = 0.4) +
+  geom_point(colour = ACCENT_COLOR, size = 1.3) +
+  scale_x_date_thesis() +
+  scale_y_continuous(labels = label_bps_thesis) +
   labs(
     title    = "Chinese Monetary Policy Surprises",
     subtitle = "1-year swap shock, main event set (n = 102), basis points",

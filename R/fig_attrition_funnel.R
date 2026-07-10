@@ -34,7 +34,7 @@ funnel <- data.frame(
 funnel$step <- factor(funnel$step, levels = rev(funnel$step))
 
 p <- ggplot(funnel, aes(x = n, y = step)) +
-  geom_col(fill = "#1b9e77", width = 0.6) +
+  geom_col(fill = ACCENT_COLOR, width = 0.6) +
   geom_text(aes(label = n), hjust = -0.3, size = 3.6, family = FIG_FONT) +
   geom_text(aes(label = drop, x = max(funnel$n) * 1.18), hjust = 0,
             colour = "grey40", size = 3, family = FIG_FONT) +
