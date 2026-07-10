@@ -21,4 +21,7 @@ message("== fig3b: forest plot, heterogeneity ==");  source("R/fig_forest_hetero
 
 message("== 07: event-subset re-estimation (exploratory) =="); source("R/07_event_subset.R")
 
+message("== 08: wild cluster bootstrap robustness diagnostic ==")
+source("R/08_wildclusterboot_robustness.R")
+
 message("== DONE. See data-clean/ and output/. ==")
