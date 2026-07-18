@@ -10,7 +10,8 @@
 #   [0,+1] col   : fx_return_01     (= fx_return + lead(fx_return), by country)
 #   shocks       : shock_1y, shock_5y
 #   countries    : idr, myr, php, sgd, thb   (ref = idr)
-#   OLS layers   : lm();  FE layers: feols(... cluster = ~date)
+#   Pooled/FE layers : feols(); pooled has no country term, FE has | country
+#   Country layer    : lm(), estimated separately per country
 #   tables       : modelsummary -> tinytable -> save_tt() into output/tables/
 # =====================================================================
 
@@ -54,7 +55,7 @@ if (chk > 1e-8) {
 # ---- Helper: run the full ladder for one window column + one shock --
 run_ladder <- function(dt, ycol, shockcol) {
   f_country <- reformulate(shockcol, response = ycol)
-  f_pool    <- reformulate(c(shockcol, "factor(country)"), response = ycol)
+  f_pool    <- reformulate(shockcol, response = ycol)
   f_fe      <- as.formula(sprintf("%s ~ %s | country", ycol, shockcol))
   f_het     <- as.formula(sprintf("%s ~ %s * i(country, ref = '%s') | country",
                                    ycol, shockcol, REF_COUNTRY))
@@ -67,7 +68,7 @@ run_ladder <- function(dt, ycol, shockcol) {
 
   list(
     country = country_models,
-    pooled  = lm(f_pool, data = dt),
+    pooled  = feols(f_pool, data = dt, vcov = ~date),
     fe      = feols(f_fe,  data = dt, cluster = ~date),
     het     = feols(f_het, data = dt, cluster = ~date)
   )
