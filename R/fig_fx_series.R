@@ -15,9 +15,15 @@ fx <- read_csv(file.path(paths$clean, "fx_asean5_clean.csv"), show_col_types = F
   arrange(date)
 
 base_date <- min(fx$date[fx$date >= as.Date("2008-01-01")])
+in_base_window <- fx$date >= as.Date("2008-01-01")
 
+# Index each country to its own first non-NA value on/after 2008-01-01 rather
+# than a single shared base_date: individual countries can have an NA on any
+# given day (e.g. a local holiday), and dividing by NA silently blanks out
+# that country's entire series (it happened to Thailand, whose 2008-01-02
+# baht quote is NA even though 2008-01-02 is a valid trading day elsewhere).
 fx_idx <- fx %>%
-  mutate(across(all_of(ASEAN5), ~ .x / .x[date == base_date] * 100)) %>%
+  mutate(across(all_of(ASEAN5), ~ .x / .x[in_base_window & !is.na(.x)][1] * 100)) %>%
   pivot_longer(cols = all_of(ASEAN5), names_to = "country", values_to = "index") %>%
   mutate(country = factor(country_labels[country], levels = country_labels[ASEAN5]))
 
