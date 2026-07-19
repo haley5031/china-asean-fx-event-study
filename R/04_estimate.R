@@ -21,9 +21,9 @@ country_ols <- lapply(ASEAN5, function(cc) {
 })
 names(country_ols) <- ASEAN5
 
-# --- Pooled OLS (country dummies) --------------------------------------------
-pooled_1y <- lm(fx_return_01 ~ shock_1y + factor(country), data = reg)
-pooled_5y <- lm(fx_return_01 ~ shock_5y + factor(country), data = reg)
+# --- Pooled OLS (naive baseline, no country control) --------------------------
+pooled_1y <- feols(fx_return_01 ~ shock_1y, data = reg, vcov = ~date)
+pooled_5y <- feols(fx_return_01 ~ shock_5y, data = reg, vcov = ~date)
 
 # --- Fixed effects (clustered by date) ---------------------------------------
 fe_1y <- feols(fx_return_01 ~ shock_1y | country, cluster = ~date, data = reg)

@@ -54,7 +54,7 @@ t2 <- modelsummary(
   gof_map  = gof_keep,
   stars    = stars,
   title    = "Pooled and Fixed-Effects Results",
-  notes    = c("Pooled OLS models include country indicators.",
+  notes    = c("Pooled OLS models include no country control (naive baseline), SEs clustered by date.",
                "FE models include country fixed effects and standard errors clustered by date.",
                "All models use the [0,+1] event window over the 2008--2020 main sample."),
   output   = "tinytable"
