@@ -20,5 +20,7 @@ message("== fig3a: forest plot, country ==");       source("R/fig_forest_country
 message("== fig3b: forest plot, heterogeneity ==");  source("R/fig_forest_heterogeneity.R")
 
 message("== 07: event-subset re-estimation (exploratory) =="); source("R/07_event_subset.R")
+message("== 08: descriptive statistics ==");        source("R/08_descriptive_stats.R")
+message("== DONE. See data-clean/ and output/. ==")
 
 message("== DONE. See data-clean/ and output/. ==")
