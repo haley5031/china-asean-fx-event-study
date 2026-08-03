@@ -1,0 +1,12 @@
+step,n
+Main event dates in cleaned policy file,102
+Exact match to an FX trading day,71
+Rolled forward to a trading day (within cap),102
+  of which already on a trading day (roll = 0),71
+  of which rolled 1 day,9
+  of which rolled 2+ days,22
+Unmatched even after rolling,0
+Exact-match dates inside 2008-2020,65
+Rolled dates inside 2008-2020,85
+Exact-match dates inside sample with nonzero 1Y surprise,56
+Rolled dates inside sample with nonzero 1Y surprise,71
