@@ -19,3 +19,4 @@ output/*
 !output/tables/
 !output/figures/
 output/models.rds
+Archive.zip
