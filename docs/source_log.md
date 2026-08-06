@@ -31,6 +31,26 @@ citation. On that basis the raw FX workbook is kept under version control.
 Required source citation: International Monetary Fund, Exchange Rate Data,
 https://www.imf.org/external/data.htm#exchange
 
+## FOMC meeting dates
+- File: `data-raw/external/fomc_meeting_dates_2008_2020.csv`
+- Intended source: Federal Reserve Board, FOMC meeting calendars and historical
+  minutes (https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm and
+  the year-by-year `fomchistorical*.htm` archive pages), which is the standard
+  citation for this list.
+- Compilation method: `federalreserve.gov` is not reachable from this project's
+  execution environment (outbound access is restricted to a small domain
+  allowlist that does not include it, confirmed by direct request), so the
+  dates were NOT downloaded programmatically the way the FRED series in R/09
+  are. They were transcribed from the standard published schedule (8 regularly
+  scheduled meetings per year, decision/last day of each meeting) plus the
+  well-documented unscheduled/emergency actions of 2008 (Jan 22, Oct 8) and
+  2020 (Mar 3, Mar 15).
+- ACTION NEEDED before this goes into the thesis: cross-check every date in
+  this file against the Fed's official calendar. It has not been verified
+  against the primary source and should be treated as provisional. If R/18
+  is re-run in an environment with access to federalreserve.gov, replace this
+  file with a programmatically fetched version and drop this caveat.
+
 ## Licensing note
 - Policy shocks: MIT (redistribution permitted; notice included).
 - FX data: IMF Data terms (redistribution permitted with attribution +

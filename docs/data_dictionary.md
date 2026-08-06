@@ -21,6 +21,13 @@ Supporting sheets `PHP_fill_log` and `PHP_unfilled_2006_2010` document the backf
 Other raw FX files (`Exchange_Rate_Report_IMF_ASEAN5.xls`, `pesodollar.xlsx`)
 are retained as provenance for that workbook.
 
+### `data-raw/external/fomc_meeting_dates_2008_2020.csv`
+FOMC meeting dates, 2008-2020: `date` (decision/last day of the meeting),
+`meeting_type` (`scheduled`/`unscheduled`), `notes`. See `docs/source_log.md`
+for provenance and a verification caveat (compiled manually, not fetched
+programmatically -- this project's environment cannot reach
+federalreserve.gov). Used by `R/18_fomc_regime_robustness.R`.
+
 ## Cleaned files (`data-clean/`, produced only by scripts)
 - `policy_shocks_main.csv` — `isMain` shocks  (from 01)
 - `policy_shocks_broad.csv` — `isBroad` shocks (from 01)
@@ -50,3 +57,14 @@ are retained as provenance for that workbook.
   with 95% CIs (from `fig_forest_country.R`)
 - `figures/fig3b_forest_heterogeneity.{pdf,png}` — Table 3 heterogeneity
   interactions with 95% CIs (from `fig_forest_heterogeneity.R`)
+- `tables/regime_fomc_2020_robustness.csv` — H3 regime interaction
+  (`shock_1y x post_split`), baseline vs. excluding FOMC-adjacent event dates
+  vs. excluding 2020 (from `R/18_fomc_regime_robustness.R`)
+- `tables/mediation_bootstrap.csv`,
+  `tables/mediation_bootstrap_table.tex` — cluster-bootstrap (by event date,
+  2000 reps) 95% percentile CIs on the mediation path $b$ and indirect effect
+  $a \times b$, for both dollar-factor mediators (from
+  `R/19_mediation_bootstrap.R`)
+- `tables/heterogeneity_joint_ftest.csv` — joint Wald/F-test that the four
+  non-reference country interactions in the H2 heterogeneity specification
+  are zero, for `shock_1y` and `shock_5y` (from `R/20_heterogeneity_ftest.R`)

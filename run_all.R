@@ -21,6 +21,19 @@ message("== fig3b: forest plot, heterogeneity ==");  source("R/fig_forest_hetero
 
 message("== 07: event-subset re-estimation (exploratory) =="); source("R/07_event_subset.R")
 message("== 08: descriptive statistics ==");        source("R/08_descriptive_stats.R")
+
+# R/09-17 (extended panel, sample-split, mediation, instrument checks) are
+# supervisor-response revisions kept as standalone scripts, run manually --
+# see each script's header. R/18-20 below need the extended panel (R/09-10)
+# and, for R/19, the cached AFE dollar file R/14 downloads, so those two are
+# sourced here as prerequisites without pulling in the rest of that chain.
+message("== 09: external FRED series ==");          source("R/09_external_data.R")
+message("== 10: build extended panel ==");           source("R/10_build_panel_extended.R")
+
+message("== 18: FOMC-adjacent + drop-2020 regime robustness =="); source("R/18_fomc_regime_robustness.R")
+message("== 19: mediation cluster bootstrap ==");                  source("R/19_mediation_bootstrap.R")
+message("== 20: heterogeneity joint F-test (H2) ==");              source("R/20_heterogeneity_ftest.R")
+
 message("== DONE. See data-clean/ and output/. ==")
 
 message("== DONE. See data-clean/ and output/. ==")
