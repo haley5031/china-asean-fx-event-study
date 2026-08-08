@@ -79,9 +79,10 @@ script comments, console messages, and `docs/data_dictionary.md` -- not a
 citation I have cross-checked against the current Overleaf draft. Confirm the
 numbering still matches before citing this table to anyone. Every script
 01-20 is now called by `run_all.R`, in dependency order rather than numeric
-order where the two differ (they don't, here -- see the comment above R/09
-in `run_all.R` for how each script's actual reads/writes were used to derive
-the order).
+order -- they mostly coincide, but not entirely: `R/14` runs before `R/13`
+(R/13's control ladder now uses the AFE dollar control that only R/14
+fetches/caches). See the comment above R/09 in `run_all.R` for the full
+reasoning behind the order.
 
 | Script | What it does | Output | Paper exhibit (as labeled in-code) |
 |---|---|---|---|
@@ -89,7 +90,7 @@ the order).
 | `01_load_policy.R` | Splits the raw shock file into the "main" and "broader" event sets. | `data-clean/policy_shocks_main.csv`, `policy_shocks_broad.csv` | — |
 | `02_clean_fx.R` | Cleans the raw FX workbook into tidy levels and daily log returns. | `data-clean/fx_asean5_clean.csv`, `fx_returns_wide.csv` | — |
 | `03_build_panel.R` | Reshapes to a long country-date panel, merges shocks onto FX dates by **exact date match**, builds the `[0,+1]` outcome, restricts to 2008-2020. | `data-clean/fx_panel.csv`, `reg_data0.csv`, `reg_data01_main.csv` (the main estimation panel) | — |
-| `04_estimate.R` | Fits every baseline model: per-country OLS, pooled OLS, fixed-effects, fixed-effects with country interactions. | `output/models.rds` | feeds Tables 1-3 and the forest-plot figures |
+| `04_estimate.R` | Fits every baseline model: per-country OLS, pooled OLS, fixed-effects, fixed-effects with country interactions. | `output/models.rds` | feeds Tables 1-3, both forest-plot figures, `R/07` (exploratory), and `R/20`'s H2 joint F-test |
 | `05_tables_figures.R` | Builds the three headline regression tables from `models.rds`. | `output/tables/country_results_table.*`, `panel_results_table.*`, `heterogeneity_results_table.*` | Table 1 (country-level), Table 2 (pooled/FE), Table 3 (heterogeneity) |
 | `06_window_robustness.R` | Re-estimates the FE and heterogeneity models across `[0]`, `[0,+1]`, `[-1,+1]` for both shock measures. | `output/tables/window_robustness_fe_shock_1y.*`, `_5y.*` | window-robustness appendix table |
 | `fig_fx_series.R` | ASEAN-5 FX levels indexed to 100 at the start of 2008. | `output/figures/fig1_fx_indexed.*` | Figure 1 |
@@ -100,11 +101,11 @@ the order).
 | `fig_forest_heterogeneity.R` | Table 3's country-interaction coefficients with 95% CIs. | `fig3b_forest_heterogeneity.*` | Figure 3b |
 | `07_event_subset.R` | Exploratory: the FE spec re-estimated on only the 56 nonzero-surprise dates instead of the full panel. Explicitly not wired into any thesis table. | `output/tables/event_subset_comparison.csv` | none -- exploratory only |
 | `08_descriptive_stats.R` | Summary statistics for FX returns and the two shock measures over the estimation sample. | `output/tables/descriptive_stats_table.tex` | descriptive statistics table |
-| `09_external_data.R` | Downloads/caches the six FRED series described above. | `data-clean/external_daily.csv` | feeds `R/10` onward |
-| `10_build_panel_extended.R` | Builds the extended panel: adds an RMB-numeraire outcome, a **forward-rolled** version of the shock dates (weekend/holiday announcements mapped to the next trading day instead of dropped), and the merged control series. | `data-clean/reg_data_ext_main.csv` (the panel every later script uses), `output/tables/roll_reconciliation.csv`, `numeraire_coverage.csv` | attrition/data-construction detail |
-| `11_numeraire.R` | Robustness of the main result to the rolled shock series; decomposes the RMB-numeraire result into `beta_USD - beta_CNY`. | `output/tables/numeraire_roll_robustness.csv`, `numeraire_decomposition.csv` | numeraire robustness section |
+| `09_external_data.R` | Downloads/caches five of the six FRED series described above (`DEXCHUS`, `VIXCLS`, `DTWEXBGS`, `DGS2`, `DCOILBRENTEU`); the sixth, `DTWEXAFEGS`, is fetched separately by `R/14`. | `data-clean/external_daily.csv` | feeds `R/10` onward |
+| `10_build_panel_extended.R` | Builds the extended panel: adds an RMB-numeraire outcome, a **forward-rolled** version of the shock dates (weekend/holiday announcements mapped to the next trading day instead of dropped), and the merged control series. | `data-clean/reg_data_ext.csv` (full-coverage, not restricted to the 2008-2020 sample), `reg_data_ext_main.csv` (the 2008-2020 panel every later script uses), `output/tables/roll_reconciliation.csv`, `numeraire_coverage.csv` | attrition/data-construction detail |
+| `11_numeraire.R` | Robustness of the main result to the rolled shock series; decomposes the RMB-numeraire result into `beta_USD - beta_CNY`. | `output/tables/numeraire_roll_robustness.csv`, `numeraire_decomposition.csv`, `output/models_numeraire.rds` (fitted models, not version-controlled -- see `.gitignore`) | numeraire robustness section |
 | `12_sample_split.R` | The regime-split analysis (H3): tests whether the FX response differs before/after 11 Aug 2015, via a `shock x post_split` interaction. | `output/tables/split_event_counts.csv`, `split_by_period.csv`, `split_singapore.csv` | H3 regime table |
-| `13_regime_stress_tests.R` | Six robustness checks on the H3 regime break (windows/measures, controls, leave-one-out, alternative split dates, mechanism decomposition, economic magnitude). | `output/tables/regime_windows.csv`, `regime_leave_one_out.csv`, `regime_alt_splits.csv`, `regime_mechanism.csv` | H3 robustness appendix |
+| `13_regime_stress_tests.R` | Six robustness checks on the H3 regime break (windows/measures, controls, leave-one-out, alternative split dates, mechanism decomposition, economic magnitude). The control ladder (check 2) uses the AFE dollar index as its preferred control, with a broad-dollar-index version reported alongside labelled misspecified -- see the caveat below. | `output/tables/regime_windows.csv`, `regime_control_ladder.csv` (every column/coefficient of check 2, not just console output), `regime_leave_one_out.csv`, `regime_alt_splits.csv`, `regime_mechanism.csv` | H3 robustness appendix |
 | `14_dollar_control_fix.R` | Re-runs the H3 control ladder with a dollar index that excludes the RMB and ASEAN-5 currencies, contrasted against the broad index that does not. | `output/tables/regime_dollar_control.csv` | H3 robustness appendix |
 | `15_mediator_or_confounder.R` | The mediation/decomposition analysis: does the post-2015 effect run through a dollar-factor channel? Point estimates only (no bootstrap CI -- see `R/19`). | `output/tables/mediation_path_a.csv`, `mediation_decomposition.csv`, `mediation_timing.csv` | mediation section |
 | `16_instrument_mix.R` | Documents the change in PBoC policy-instrument mix (quantity tools pre-2015 vs. price tools after) and tests whether the FX response differs by instrument type. | `output/tables/instrument_composition.csv`, `instrument_flags.csv`, `instrument_span.csv` | instrument-mix section |
@@ -152,6 +153,20 @@ global-shock confound is most plausible and bias the check in favor of
 finding a clean result. Both cuts are reported; only the scheduled-only one
 is the headline.
 
+**AFE dollar vs. broad dollar as a control.** `R/13`'s control ladder (check
+2) uses the advanced-foreign-economies dollar index (`DTWEXAFEGS`) as its
+preferred dollar-strength control, not the broad dollar index (`DTWEXBGS`).
+The broad index has the ASEAN-5 currencies and the renminbi as constituents,
+so conditioning on it puts a transformation of the dependent variable on the
+right-hand side and partially absorbs the renminbi's own response, which is
+a transmission channel here (see `R/11`, `R/15`), not a confounder. The
+broad-dollar columns are still reported in `output/tables/regime_control_ladder.csv`
+and the console table, explicitly labelled `[misspecified]`, for contrast --
+not because they're a valid alternative specification. The same distinction
+applies to the AFE-vs-broad "Broad dollar" rows reported alongside AFE
+throughout the mediation scripts (`R/15`, `R/19`): AFE is preferred there
+too, for the same reason.
+
 **Overlapping `[0,+1]` windows.** A few main-sample announcement dates are
 one trading day apart, so one event's `+1` day is the next event's `0` day
 (e.g. 2012-07-03 and 2012-07-05). The `fx_return_01` outcome for the earlier
@@ -176,15 +191,16 @@ actually reported at the precision these tables use. If a fresh run produces
 a difference bigger than that, treat it as a real discrepancy and investigate
 before trusting the new numbers.
 
-**The FRED cache.** `R/09` and `R/14` both download and cache FRED series
-into `data-raw/external/`; those six files are committed, so a fresh clone
-does not need internet access to reproduce the pipeline as it stands. Now
-that `run_all.R` calls `R/14` before `R/15` and `R/19` (which both need the
-advanced-foreign-economies dollar index, `DTWEXAFEGS`, that `R/14` fetches),
-a full `run_all.R` run will re-fetch that file itself if it's ever missing.
-Running `R/15` or `R/19` on their own without ever having run `R/14` in that
-session or having the file cached is the only way this still bites -- they
-fail with a clear "run R/14 first" error rather than silently proceeding.
+**The FRED cache.** `R/09` and `R/14` between them download and cache all six
+FRED series into `data-raw/external/`; those six files are committed, so a
+fresh clone does not need internet access to reproduce the pipeline as it
+stands. Now that `run_all.R` calls `R/14` before `R/13`, `R/15`, and `R/19`
+(which all need the advanced-foreign-economies dollar index, `DTWEXAFEGS`,
+that `R/14` fetches), a full `run_all.R` run will re-fetch that file itself
+if it's ever missing. Running `R/13`, `R/15`, or `R/19` on their own without
+ever having run `R/14` in that session or having the file cached is the only
+way this still bites -- they fail with a clear "run R/14 first" error rather
+than silently proceeding.
 
 ## Status
 

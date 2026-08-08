@@ -66,11 +66,11 @@ sample (`SAMPLE_START`/`SAMPLE_END`) downstream.
 | Series ID | Measures | Original source (via FRED) | Used for |
 |---|---|---|---|
 | `DEXCHUS` | China/U.S. FX rate, CNY per USD, daily | Federal Reserve Board of Governors | RMB numeraire construction (`R/10`, `R/11`) |
-| `VIXCLS` | CBOE Volatility Index (VIX), daily | Chicago Board Options Exchange | Global risk control (`R/13`) |
-| `DTWEXBGS` | Nominal broad U.S. dollar index, daily | Federal Reserve Board of Governors | Dollar-leg control; `R/14` documents that it contains the RMB and all five ASEAN-5 currencies, so it is retained for contrast but not used as the preferred control |
-| `DGS2` | 2-year Treasury constant-maturity yield, daily | Federal Reserve Board of Governors | U.S. monetary-policy control (`R/13`) |
-| `DCOILBRENTEU` | Brent crude, USD/barrel, daily | U.S. Energy Information Administration | Commodity control (`R/13`) |
-| `DTWEXAFEGS` | Nominal advanced-foreign-economies U.S. dollar index, daily | Federal Reserve Board of Governors | Preferred dollar-factor mediator/control (`R/14`, `R/15`, `R/19`): excludes China and all ASEAN-5 currencies, so unlike `DTWEXBGS` it does not mechanically contain the transmission channel or the outcome |
+| `VIXCLS` | CBOE Volatility Index (VIX), daily | Chicago Board Options Exchange | Global risk control (`R/11`, `R/13`) |
+| `DTWEXBGS` | Nominal broad U.S. dollar index, daily | Federal Reserve Board of Governors | Dollar-leg control (`R/11`, `R/13`, `R/14`, `R/15`, `R/17`, `R/19`); `R/14` documents that it contains the RMB and all five ASEAN-5 currencies, so it is retained for contrast (labelled misspecified in `R/13`'s control ladder) but not used as the preferred control |
+| `DGS2` | 2-year Treasury constant-maturity yield, daily | Federal Reserve Board of Governors | U.S. monetary-policy control (`R/11`, `R/13`, `R/14`) |
+| `DCOILBRENTEU` | Brent crude, USD/barrel, daily | U.S. Energy Information Administration | Commodity control (`R/11`, `R/13`, `R/14`) |
+| `DTWEXAFEGS` | Nominal advanced-foreign-economies U.S. dollar index, daily | Federal Reserve Board of Governors | Preferred dollar-factor mediator/control (`R/13`, `R/14`, `R/15`, `R/19`): excludes China and all ASEAN-5 currencies, so unlike `DTWEXBGS` it does not mechanically contain the transmission channel or the outcome |
 
 FRED terms of use (https://fred.stlouisfed.org/legal/): this project's
 execution environment could not reach fred.stlouisfed.org to re-fetch or
