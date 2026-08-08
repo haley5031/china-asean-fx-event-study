@@ -27,20 +27,21 @@ message("== 08: descriptive statistics ==");        source("R/08_descriptive_sta
 # each script actually reads and writes (per its own header), not its number:
 #   R/09  -> data-clean/external_daily.csv
 #   R/10  -> data-clean/reg_data_ext_main.csv, needed by everything from here on
-#   R/11-13, R/16-18 only need R/10's panel (plus R/16-17 also read
+#   R/11-12, R/16-18 only need R/10's panel (plus R/16-17 also read
 #     data-clean/policy_shocks_main.csv from R/01); no dependencies among
 #     themselves, so numeric order is used
 #   R/14  -> also fetches/caches data-raw/external/DTWEXAFEGS.csv
-#   R/15, R/19 require that cached file, so R/14 must precede both -- their
-#     own headers say so explicitly ("fetched by R/14")
+#   R/13, R/15, R/19 require that cached file (R/13 since it added an AFE-
+#     dollar control column), so R/14 must precede all three -- their own
+#     headers say so explicitly ("fetched by R/14")
 #   R/20  only needs output/models.rds, already produced by R/04
 message("== 09: external FRED series ==");          source("R/09_external_data.R")
 message("== 10: build extended panel ==");           source("R/10_build_panel_extended.R")
 
 message("== 11: numeraire decomposition ==");                     source("R/11_numeraire.R")
 message("== 12: sample split (H3) ==");                           source("R/12_sample_split.R")
-message("== 13: regime stress tests ==");                         source("R/13_regime_stress_tests.R")
 message("== 14: dollar control fix ==");                          source("R/14_dollar_control_fix.R")
+message("== 13: regime stress tests ==");                         source("R/13_regime_stress_tests.R")
 message("== 15: mediator or confounder ==");                      source("R/15_mediator_or_confounder.R")
 message("== 16: instrument mix ==");                              source("R/16_instrument_mix.R")
 message("== 17: instrument tests ==");                            source("R/17_instrument_tests.R")

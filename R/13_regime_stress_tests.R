@@ -12,9 +12,20 @@
 #
 #   1. Windows and shock measures. Does the break survive [0] and [-1,+1], the
 #      5Y measure, and the rolled (weekend-corrected) shock series?
-#   2. Controls. Does it survive the broad dollar index, which alone explains
-#      13% of daily return variance? Run on a COMMON SAMPLE so the columns are
-#      nested and the coefficient path is interpretable.
+#   2. Controls. Does it survive a dollar-strength control, which alone
+#      explains a material share of daily return variance? Run on a COMMON
+#      SAMPLE so the columns are nested and the coefficient path is
+#      interpretable. The preferred control is the advanced-foreign-economies
+#      (AFE) dollar index, not the broad dollar index: the broad index
+#      (DTWEXBGS) has the ASEAN-5 currencies AND the renminbi as constituents,
+#      so conditioning on it puts a transformation of the dependent variable
+#      on the right-hand side, and partially absorbs the renminbi's own
+#      response -- which is a transmission channel here (R/11, R/15), not a
+#      confounder. The AFE index (DTWEXAFEGS) excludes both, so it measures
+#      general dollar strength without mechanically containing either the
+#      channel or the outcome. The broad-dollar columns are still reported,
+#      last, explicitly labelled as misspecified, so the contrast is visible
+#      rather than assumed away.
 #   3. Influence. Drop each post-split event date in turn. If one date carries
 #      the result, that is a fragility to report, not a finding.
 #   4. Alternative split dates. If the break is real it should not be
@@ -26,6 +37,7 @@
 #      still be an economically trivial exchange-rate move.
 #
 # Input : data-clean/reg_data_ext_main.csv
+#         data-raw/external/DTWEXAFEGS.csv   (fetched by R/14)
 # Output: output/tables/regime_*.csv
 # =============================================================================
 
@@ -81,8 +93,30 @@ cat("\nRead: the break is credible only if it is confined to the USD numeraire\n
 # The control ladder in R/11 section D lost observations column by column
 # (13,017 -> 12,313), so the coefficient path mixed the effect of adding a
 # control with the effect of changing the sample. Here the sample is fixed to
-# rows where every control is observed, so the columns are genuinely nested.
-ctrl_vars <- c("ctrl_ust2y_w01", "ctrl_dollar_w01", "ctrl_vix_w01", "ctrl_brent_w01")
+# rows where every control -- UST 2Y, AFE dollar, broad dollar, VIX, Brent --
+# is observed, so every column below, preferred and misspecified alike, is
+# genuinely nested on one common sample.
+
+# --- AFE dollar control (same construction as R/14/R/15/R/19) ---------------
+afe_file <- file.path(paths$raw_external, "DTWEXAFEGS.csv")
+if (!file.exists(afe_file))
+  stop("Run R/14_dollar_control_fix.R first -- it downloads DTWEXAFEGS.")
+
+afe_raw <- read_csv(afe_file, col_types = cols(.default = col_character()))
+afe <- data.frame(date = as.Date(afe_raw[[1]]),
+                  dollar_afe = suppressWarnings(as.numeric(afe_raw[[2]])))
+afe <- afe[!is.na(afe$date), ]
+
+afe_ctrl <- panel %>% distinct(date) %>% arrange(date) %>%
+  left_join(afe, by = "date") %>%
+  mutate(ret_dollar_afe = 100 * (log(dollar_afe) - log(lag(dollar_afe))),
+         ctrl_afe_w01   = ret_dollar_afe + lead(ret_dollar_afe, 1)) %>%
+  select(date, ctrl_afe_w01)
+
+panel <- panel %>% left_join(afe_ctrl, by = "date")
+
+ctrl_vars <- c("ctrl_ust2y_w01", "ctrl_afe_w01", "ctrl_dollar_w01",
+               "ctrl_vix_w01", "ctrl_brent_w01")
 
 common <- panel %>%
   filter(!is.na(usd_w01), if_all(all_of(ctrl_vars), ~ !is.na(.x)))
@@ -93,18 +127,31 @@ fml_c <- function(rhs) as.formula(sprintf(
   "usd_w01 ~ %s * post_split%s | country",
   SHOCK, if (length(rhs)) paste0(" + ", paste(rhs, collapse = " + ")) else ""))
 
-m1 <- feols(fml_c(NULL),                          cluster = ~date, data = common)
-m2 <- feols(fml_c("ctrl_ust2y_w01"),              cluster = ~date, data = common)
-m3 <- feols(fml_c(ctrl_vars[1:2]),                cluster = ~date, data = common)
-m4 <- feols(fml_c(ctrl_vars),                     cluster = ~date, data = common)
+m1 <- feols(fml_c(NULL),                                       cluster = ~date, data = common)
+m2 <- feols(fml_c("ctrl_ust2y_w01"),                           cluster = ~date, data = common)
+m3 <- feols(fml_c(c("ctrl_ust2y_w01", "ctrl_afe_w01")),        cluster = ~date, data = common)
+m4 <- feols(fml_c(c("ctrl_ust2y_w01", "ctrl_afe_w01",
+                    "ctrl_vix_w01", "ctrl_brent_w01")),        cluster = ~date, data = common)
+m5 <- feols(fml_c(c("ctrl_ust2y_w01", "ctrl_dollar_w01")),     cluster = ~date, data = common)
+m6 <- feols(fml_c(c("ctrl_ust2y_w01", "ctrl_dollar_w01",
+                    "ctrl_vix_w01", "ctrl_brent_w01")),        cluster = ~date, data = common)
 
 cat("\n\n=== 2. Does the break survive controls? (common sample, nested) ===\n")
-print(etable(list("(1) no controls" = m1, "(2) + UST 2Y" = m2,
-                  "(3) + dollar"    = m3, "(4) + VIX, oil" = m4),
-             cluster = ~date, digits = 3, fitstat = c("n", "r2", "wr2")))
-cat("\nThe broad dollar index is the control that matters here. If the\n",
-    "interaction survives column (3), the post-2015 response is not simply\n",
-    "ASEAN currencies tracking general dollar movement.\n", sep = "")
+print(etable(list(
+    "(1) no controls"                                = m1,
+    "(2) + UST 2Y"                                    = m2,
+    "(3) + UST 2Y + AFE dollar"                       = m3,
+    "(4) + UST 2Y + AFE dollar + VIX + Brent"         = m4,
+    "(5) + UST 2Y + broad dollar [misspecified]"      = m5,
+    "(6) + UST 2Y + broad dollar + VIX + Brent [misspecified]" = m6),
+  cluster = ~date, digits = 3, fitstat = c("n", "r2", "wr2")))
+cat("\nColumns (1)-(4) are the preferred ladder: the AFE dollar index is a\n",
+    "dollar-strength control that does not contain the ASEAN-5 currencies or\n",
+    "the renminbi. Columns (5)-(6) repeat (3)-(4) with the broad dollar index\n",
+    "in place of AFE, reported only for contrast -- see the header note above\n",
+    "for why they are labelled misspecified. If the interaction survives\n",
+    "column (3), the post-2015 response is not simply ASEAN currencies\n",
+    "tracking general dollar movement.\n", sep = "")
 
 # =============================================================================
 # 3. Influence: leave-one-event-out over the post-split announcements
