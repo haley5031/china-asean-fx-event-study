@@ -136,15 +136,17 @@ m5 <- feols(fml_c(c("ctrl_ust2y_w01", "ctrl_dollar_w01")),     cluster = ~date, 
 m6 <- feols(fml_c(c("ctrl_ust2y_w01", "ctrl_dollar_w01",
                     "ctrl_vix_w01", "ctrl_brent_w01")),        cluster = ~date, data = common)
 
+ladder_specs <- list(
+  "(1) no controls"                                          = m1,
+  "(2) + UST 2Y"                                              = m2,
+  "(3) + UST 2Y + AFE dollar"                                 = m3,
+  "(4) + UST 2Y + AFE dollar + VIX + Brent"                   = m4,
+  "(5) + UST 2Y + broad dollar [misspecified]"                = m5,
+  "(6) + UST 2Y + broad dollar + VIX + Brent [misspecified]"  = m6
+)
+
 cat("\n\n=== 2. Does the break survive controls? (common sample, nested) ===\n")
-print(etable(list(
-    "(1) no controls"                                = m1,
-    "(2) + UST 2Y"                                    = m2,
-    "(3) + UST 2Y + AFE dollar"                       = m3,
-    "(4) + UST 2Y + AFE dollar + VIX + Brent"         = m4,
-    "(5) + UST 2Y + broad dollar [misspecified]"      = m5,
-    "(6) + UST 2Y + broad dollar + VIX + Brent [misspecified]" = m6),
-  cluster = ~date, digits = 3, fitstat = c("n", "r2", "wr2")))
+print(etable(ladder_specs, cluster = ~date, digits = 3, fitstat = c("n", "r2", "wr2")))
 cat("\nColumns (1)-(4) are the preferred ladder: the AFE dollar index is a\n",
     "dollar-strength control that does not contain the ASEAN-5 currencies or\n",
     "the renminbi. Columns (5)-(6) repeat (3)-(4) with the broad dollar index\n",
@@ -152,6 +154,28 @@ cat("\nColumns (1)-(4) are the preferred ladder: the AFE dollar index is a\n",
     "for why they are labelled misspecified. If the interaction survives\n",
     "column (3), the post-2015 response is not simply ASEAN currencies\n",
     "tracking general dollar movement.\n", sep = "")
+
+# --- Full ladder to CSV: every column, every coefficient, both R2s ----------
+ladder_row <- function(model, spec_label) {
+  ct <- as.data.frame(coeftable(model))
+  data.frame(
+    spec  = spec_label,
+    term  = rownames(ct),
+    coef  = ct[["Estimate"]],
+    se    = ct[["Std. Error"]],
+    pval  = ct[[grep("^Pr", names(ct))[1]]],
+    nobs  = nobs(model),
+    r2    = r2(model, "r2"),
+    wr2   = r2(model, "wr2"),
+    row.names = NULL
+  )
+}
+
+ladder_tab <- bind_rows(lapply(names(ladder_specs), function(nm)
+  ladder_row(ladder_specs[[nm]], nm)))
+
+write_csv(ladder_tab, file.path(paths$out_tables, "regime_control_ladder.csv"))
+message("Saved: output/tables/regime_control_ladder.csv (", nrow(ladder_tab), " rows)")
 
 # =============================================================================
 # 3. Influence: leave-one-event-out over the post-split announcements
