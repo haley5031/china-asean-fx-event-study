@@ -56,28 +56,32 @@ set correctly, then run:
 source("run_all.R")
 ```
 
-This rebuilds `data-clean/` and `output/` from the files in `data-raw/`. In a
-verification run of the current branch, `run_all.R` completed in about 6
-minutes with no errors (most of that time is one script, `R/19`, which runs a
-2,000-replication bootstrap). It downloads nothing on that run if the FRED
-files already sitting in `data-raw/external/` are left in place -- delete
-that folder only if you want to force a fresh download, which needs internet
+This rebuilds `data-clean/` and `output/` from the files in `data-raw/`.
+`run_all.R` now runs every script 01-20 (R/11-17 were wired in later and are
+no longer separate from this list -- see below). In a verification run of
+the current branch, the full 01-20 pipeline completed in 3-6 minutes with no
+errors across two clean-state runs (most of the variation, and most of the
+time either way, is one script, `R/19`, which runs a 2,000-replication
+bootstrap; treat "a few minutes" as the realistic expectation rather than
+either single figure). It downloads nothing on that run if the FRED files
+already sitting in `data-raw/external/` are left in place -- delete that
+folder only if you want to force a fresh download, which needs internet
 access to fred.stlouisfed.org.
 
-Everything below `[fig...]`/Task-script numbering in the table can also be
-run individually, in numbered order; every script starts with
-`source("R/00_setup.R")`, so each is self-contained given the files upstream
-of it in `data-clean/`.
+Every script can also be run individually, in numbered order; each starts
+with `source("R/00_setup.R")`, so each is self-contained given the files
+upstream of it in `data-clean/`.
 
 ## Script-to-exhibit map
 
 The "paper exhibit" column below is the label used *inside this codebase* --
 script comments, console messages, and `docs/data_dictionary.md` -- not a
 citation I have cross-checked against the current Overleaf draft. Confirm the
-numbering still matches before citing this table to anyone. Scripts marked
-**not run by `run_all.R`** exist and work (verified by running each one
-directly), but you have to invoke them yourself; nothing in `run_all.R`
-currently calls them.
+numbering still matches before citing this table to anyone. Every script
+01-20 is now called by `run_all.R`, in dependency order rather than numeric
+order where the two differ (they don't, here -- see the comment above R/09
+in `run_all.R` for how each script's actual reads/writes were used to derive
+the order).
 
 | Script | What it does | Output | Paper exhibit (as labeled in-code) |
 |---|---|---|---|
@@ -98,27 +102,28 @@ currently calls them.
 | `08_descriptive_stats.R` | Summary statistics for FX returns and the two shock measures over the estimation sample. | `output/tables/descriptive_stats_table.tex` | descriptive statistics table |
 | `09_external_data.R` | Downloads/caches the six FRED series described above. | `data-clean/external_daily.csv` | feeds `R/10` onward |
 | `10_build_panel_extended.R` | Builds the extended panel: adds an RMB-numeraire outcome, a **forward-rolled** version of the shock dates (weekend/holiday announcements mapped to the next trading day instead of dropped), and the merged control series. | `data-clean/reg_data_ext_main.csv` (the panel every later script uses), `output/tables/roll_reconciliation.csv`, `numeraire_coverage.csv` | attrition/data-construction detail |
-| `11_numeraire.R` **— not run by `run_all.R`** | Robustness of the main result to the rolled shock series; decomposes the RMB-numeraire result into `beta_USD - beta_CNY`. | `output/tables/numeraire_roll_robustness.csv`, `numeraire_decomposition.csv` | numeraire robustness section |
-| `12_sample_split.R` **— not run by `run_all.R`** | The regime-split analysis (H3): tests whether the FX response differs before/after 11 Aug 2015, via a `shock x post_split` interaction. | `output/tables/split_event_counts.csv`, `split_by_period.csv`, `split_singapore.csv` | H3 regime table |
-| `13_regime_stress_tests.R` **— not run by `run_all.R`** | Six robustness checks on the H3 regime break (windows/measures, controls, leave-one-out, alternative split dates, mechanism decomposition, economic magnitude). | `output/tables/regime_windows.csv`, `regime_leave_one_out.csv`, `regime_alt_splits.csv`, `regime_mechanism.csv` | H3 robustness appendix |
-| `14_dollar_control_fix.R` **— not run by `run_all.R`** | Re-runs the H3 control ladder with a dollar index that excludes the RMB and ASEAN-5 currencies, contrasted against the broad index that does not. | `output/tables/regime_dollar_control.csv` | H3 robustness appendix |
-| `15_mediator_or_confounder.R` **— not run by `run_all.R`** | The mediation/decomposition analysis: does the post-2015 effect run through a dollar-factor channel? Point estimates only (no bootstrap CI -- see `R/19`). | `output/tables/mediation_path_a.csv`, `mediation_decomposition.csv`, `mediation_timing.csv` | mediation section |
-| `16_instrument_mix.R` **— not run by `run_all.R`** | Documents the change in PBoC policy-instrument mix (quantity tools pre-2015 vs. price tools after) and tests whether the FX response differs by instrument type. | `output/tables/instrument_composition.csv`, `instrument_flags.csv`, `instrument_span.csv` | instrument-mix section |
-| `17_instrument_tests.R` **— not run by `run_all.R`** | Formal tests on the price-vs-quantity claim in `R/16`, including a leave-one-out check and a dollar-control check. | `output/tables/instrument_tests_claim1.csv`, `_claim2.csv`, `_loo.csv` | instrument-mix section |
+| `11_numeraire.R` | Robustness of the main result to the rolled shock series; decomposes the RMB-numeraire result into `beta_USD - beta_CNY`. | `output/tables/numeraire_roll_robustness.csv`, `numeraire_decomposition.csv` | numeraire robustness section |
+| `12_sample_split.R` | The regime-split analysis (H3): tests whether the FX response differs before/after 11 Aug 2015, via a `shock x post_split` interaction. | `output/tables/split_event_counts.csv`, `split_by_period.csv`, `split_singapore.csv` | H3 regime table |
+| `13_regime_stress_tests.R` | Six robustness checks on the H3 regime break (windows/measures, controls, leave-one-out, alternative split dates, mechanism decomposition, economic magnitude). | `output/tables/regime_windows.csv`, `regime_leave_one_out.csv`, `regime_alt_splits.csv`, `regime_mechanism.csv` | H3 robustness appendix |
+| `14_dollar_control_fix.R` | Re-runs the H3 control ladder with a dollar index that excludes the RMB and ASEAN-5 currencies, contrasted against the broad index that does not. | `output/tables/regime_dollar_control.csv` | H3 robustness appendix |
+| `15_mediator_or_confounder.R` | The mediation/decomposition analysis: does the post-2015 effect run through a dollar-factor channel? Point estimates only (no bootstrap CI -- see `R/19`). | `output/tables/mediation_path_a.csv`, `mediation_decomposition.csv`, `mediation_timing.csv` | mediation section |
+| `16_instrument_mix.R` | Documents the change in PBoC policy-instrument mix (quantity tools pre-2015 vs. price tools after) and tests whether the FX response differs by instrument type. | `output/tables/instrument_composition.csv`, `instrument_flags.csv`, `instrument_span.csv` | instrument-mix section |
+| `17_instrument_tests.R` | Formal tests on the price-vs-quantity claim in `R/16`, including a leave-one-out check and a dollar-control check. | `output/tables/instrument_tests_claim1.csv`, `_claim2.csv`, `_loo.csv` | instrument-mix section |
 | `18_fomc_regime_robustness.R` | Re-estimates the H3 regime interaction excluding event dates within 1 trading day of a scheduled FOMC decision (headline cut), excluding all of 2020, and excluding dates near *any* FOMC meeting including unscheduled ones (sensitivity cut), alongside the baseline. | `output/tables/regime_fomc_2020_robustness.csv` | H3 robustness appendix |
 | `19_mediation_bootstrap.R` | Cluster bootstrap (resampling event dates, 2,000 replications) giving a 95% CI on the mediation path-*b* coefficient and the indirect effect a×b from `R/15`. | `output/tables/mediation_bootstrap.csv`, `mediation_bootstrap_table.tex` | mediation section |
 | `20_heterogeneity_ftest.R` | Joint F-test that Table 3's four country-interaction terms (relative to Indonesia) are all zero, for both shock measures. | `output/tables/heterogeneity_joint_ftest.csv` | H2 robustness |
 
-`R/11` through `R/17` were written as standalone supervisor-response scripts
-(see `docs/RUN_ME_FIRST.md` for the original hand-off notes) and have never
-been wired into `run_all.R`, in this repository's history or otherwise. They
-still run correctly if invoked directly -- `source("R/00_setup.R")` then
-`source("R/12_sample_split.R")`, for instance -- and their outputs are
-committed to `output/tables/`, but a fresh `source("run_all.R")` run will not
-regenerate them. If any of that material (the H3 regime robustness section,
-the mediation point estimates, the instrument-mix tests) is going in the
-final draft, decide whether to wire those scripts into `run_all.R` too or
-keep running them by hand.
+`R/11` through `R/17` were originally written as standalone supervisor-response
+scripts (see `docs/RUN_ME_FIRST.md` for the original hand-off notes) and, for
+most of this branch's history, were never called by `run_all.R` -- a fresh
+`source("run_all.R")` run did not reproduce the numeraire decomposition, the
+H3 regime stress tests, the mediation point estimates, or the instrument-mix
+tests, even though all of that is committed to `output/tables/` and appears
+in the paper. That has been fixed: `run_all.R` now calls all of R/01-20 in
+dependency order (see the comment above the R/09 line in `run_all.R` for how
+that order was derived from what each script actually reads and writes, not
+its number). A fresh clean-state run of the full 01-20 pipeline was verified
+to exit 0 with every table reproduced to floating-point precision.
 
 ## Known caveats
 
@@ -173,12 +178,13 @@ before trusting the new numbers.
 
 **The FRED cache.** `R/09` and `R/14` both download and cache FRED series
 into `data-raw/external/`; those six files are committed, so a fresh clone
-does not need internet access to reproduce the pipeline as it stands. If one
-of those cache files is ever deleted, note that the advanced-foreign-economies
-dollar index (`DTWEXAFEGS`, used by the mediation analysis in `R/15`/`R/19`)
-is only fetched by `R/14`, which `run_all.R` does not call -- `R/19` would
-fail with a clear "run R/14 first" error rather than silently proceeding, but
-it would fail.
+does not need internet access to reproduce the pipeline as it stands. Now
+that `run_all.R` calls `R/14` before `R/15` and `R/19` (which both need the
+advanced-foreign-economies dollar index, `DTWEXAFEGS`, that `R/14` fetches),
+a full `run_all.R` run will re-fetch that file itself if it's ever missing.
+Running `R/15` or `R/19` on their own without ever having run `R/14` in that
+session or having the file cached is the only way this still bites -- they
+fail with a clear "run R/14 first" error rather than silently proceeding.
 
 ## Status
 
