@@ -22,11 +22,25 @@ Other raw FX files (`Exchange_Rate_Report_IMF_ASEAN5.xls`, `pesodollar.xlsx`)
 are retained as provenance for that workbook.
 
 ### `data-raw/external/fomc_meeting_dates_2008_2020.csv`
-FOMC meeting dates, 2008-2020: `date` (decision/last day of the meeting),
-`meeting_type` (`scheduled`/`unscheduled`), `notes`. See `docs/source_log.md`
-for provenance and a verification caveat (compiled manually, not fetched
-programmatically -- this project's environment cannot reach
-federalreserve.gov). Used by `R/18_fomc_regime_robustness.R`.
+Verified FOMC meeting dates, 2008-2020: 103 scheduled + 5 unscheduled
+meetings that produced a public announcement. Columns:
+- `meeting_start`, `meeting_end` — calendar dates the meeting itself spanned.
+- `decision_date` — the date the policy statement reached markets. Usually
+  `meeting_end`, but for three 2008 conference calls and the 2 March 2020
+  meeting the statement followed the meeting by a day, so `decision_date`
+  differs from `meeting_end` in those four rows. This is the column
+  `R/18_fomc_regime_robustness.R` keys the adjacency flag on.
+- `meeting_type` — `scheduled` or `unscheduled`. 2020 has only 7 scheduled
+  meetings by design: the 17-18 March 2020 meeting was cancelled and
+  superseded by the unscheduled 15 March meeting. This is correct, not
+  missing data.
+- `source`, `notes` — provenance tag and any construction notes (e.g. dates
+  that changed between the tentative and final Fed calendar).
+
+See `docs/source_log.md` for full provenance. This file supersedes an
+earlier memory-compiled version that had real errors; treat it as
+authoritative and do not regenerate it from the shock series or from
+memory.
 
 ## Cleaned files (`data-clean/`, produced only by scripts)
 - `policy_shocks_main.csv` — `isMain` shocks  (from 01)
