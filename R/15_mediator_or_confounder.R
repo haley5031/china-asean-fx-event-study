@@ -21,6 +21,22 @@
 # This script runs that test, then decomposes the total effect into direct and
 # indirect components, verifying the decomposition identity numerically.
 #
+# STEP 1 vs STEP 2 -- two different estimators of path a, do not conflate them.
+#   STEP 1 ("Panel A" in the paper) reports path a at TWO levels: date-level
+#     OLS (one row per calendar date, no country dimension) and, alongside it,
+#     the panel estimator with country fixed effects and SEs clustered by
+#     date. The panel version there is the SAME specification as path_a in
+#     STEP 2 below and in R/19's bootstrap -- it is the preferred estimate,
+#     since it matches the convention used everywhere else in the thesis. The
+#     date-level and panel numbers differ (documented at STEP 1) because the
+#     panel version implicitly weights each date by how many of the five
+#     ASEAN-5 countries have a valid [0,+1] return that day, while the
+#     date-level version weights every trading day equally.
+#   STEP 2's path_a is the panel estimator only, estimated on the post-split
+#     subsample used for the decomposition (a slightly different sample than
+#     STEP 1's panel estimate, which also covers pre-split). R/19's cluster
+#     bootstrap replicates STEP 2's path_a and path_b models exactly.
+#
 # Input : data-clean/reg_data_ext_main.csv
 #         data-raw/external/DTWEXAFEGS.csv   (fetched by R/14)
 # Output: output/tables/mediation_*.csv
@@ -55,9 +71,19 @@ panel <- panel %>% left_join(afe_ctrl, by = "date")
 # =============================================================================
 # STEP 1. Does the shock predict the dollar factor?  (path a)
 # =============================================================================
-# Estimated at the DATE level, not in the panel. The dollar factor is a single
-# time series; replicating it five times across countries would understate the
-# standard errors without adding information.
+# Reported at TWO levels, side by side, labelled, so they cannot be confused
+# (see the header note above):
+#   "date-level OLS"               -- one row per calendar date, no country
+#                                      dimension, unweighted across dates.
+#   "panel, country FE, clustered" -- one row per country-date, country fixed
+#                                      effects, SEs clustered by date; the
+#                                      same specification used everywhere else
+#                                      in the thesis. PREFERRED for the paper.
+# The two differ because the panel version implicitly weights each date by
+# how many of the five ASEAN-5 countries have a valid [0,+1] return that day
+# (coverage is unbalanced -- idr in particular has notably fewer observed
+# dates than the other four), while the date-level version weights every
+# trading day equally.
 dates <- panel %>%
   distinct(date, .keep_all = TRUE) %>%
   select(date, post_split, all_of(SHOCK), ctrl_afe_w01, ctrl_dollar_w01) %>%
@@ -68,29 +94,56 @@ path_a <- bind_rows(lapply(
        c("Broad dollar", "ctrl_dollar_w01")),
   function(m) {
     lab <- m[1]; mv <- m[2]
+
+    # --- date-level OLS -------------------------------------------------
     full <- lm(as.formula(sprintf("%s ~ %s * post_split", mv, SHOCK)), data = dates)
     pre  <- lm(as.formula(sprintf("%s ~ %s", mv, SHOCK)),
                data = filter(dates, post_split == 0))
     post <- lm(as.formula(sprintf("%s ~ %s", mv, SHOCK)),
                data = filter(dates, post_split == 1))
-    g <- function(mod, term, per) {
+    g_lm <- function(mod, term, per) {
       ct <- summary(mod)$coefficients
       if (!term %in% rownames(ct)) return(NULL)
-      data.frame(mediator = lab, period = per, term = term,
-                 coef = ct[term, 1], se = ct[term, 2], pval = ct[term, 4],
+      data.frame(mediator = lab, estimator = "date-level OLS", period = per,
+                 term = term, coef = ct[term, 1], se = ct[term, 2],
+                 pval = ct[term, 4], n = nobs(mod), row.names = NULL)
+    }
+
+    # --- panel, country FE, clustered by date (matches STEP 2 / R/19) ---
+    dpanel <- panel %>% filter(!is.na(usd_w01), !is.na(.data[[mv]]))
+    full_p <- feols(as.formula(sprintf("%s ~ %s * post_split | country", mv, SHOCK)),
+                    cluster = ~date, data = dpanel)
+    pre_p  <- feols(as.formula(sprintf("%s ~ %s | country", mv, SHOCK)),
+                    cluster = ~date, data = filter(dpanel, post_split == 0))
+    post_p <- feols(as.formula(sprintf("%s ~ %s | country", mv, SHOCK)),
+                    cluster = ~date, data = filter(dpanel, post_split == 1))
+    g_fx <- function(mod, term, per) {
+      ct <- as.data.frame(coeftable(mod))
+      if (!term %in% rownames(ct)) return(NULL)
+      data.frame(mediator = lab, estimator = "panel, country FE, clustered",
+                 period = per, term = term, coef = ct[term, "Estimate"],
+                 se = ct[term, "Std. Error"],
+                 pval = ct[term, grep("^Pr", names(ct))[1]],
                  n = nobs(mod), row.names = NULL)
     }
+
     bind_rows(
-      g(pre,  SHOCK, "pre-split"),
-      g(post, SHOCK, "post-split"),
-      g(full, paste0(SHOCK, ":post_split"), "interaction")
+      g_lm(pre,  SHOCK, "pre-split"),
+      g_lm(post, SHOCK, "post-split"),
+      g_lm(full, paste0(SHOCK, ":post_split"), "interaction"),
+      g_fx(pre_p,  SHOCK, "pre-split"),
+      g_fx(post_p, SHOCK, "post-split"),
+      g_fx(full_p, paste0(SHOCK, ":post_split"), "interaction")
     )
   }
 ))
 
 cat("\n=== STEP 1 (path a): does the surprise move the dollar factor? ===\n")
-cat("    Date-level OLS, [0,+1] window.\n\n")
-print(path_a, row.names = FALSE, digits = 3)
+cat("    Two estimators, side by side. \"panel, country FE, clustered\" is\n",
+    "    the preferred one for the paper -- it matches the specification\n",
+    "    used everywhere else in the thesis.\n\n", sep = "")
+print(path_a[, c("mediator", "estimator", "period", "coef", "se", "pval", "n")],
+      row.names = FALSE, digits = 3)
 write_csv(path_a, file.path(paths$out_tables, "mediation_path_a.csv"))
 
 cat("\nDECISION RULE\n",

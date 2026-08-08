@@ -7,6 +7,16 @@
 # error (it is a product of two estimated coefficients), so R/15 reports it
 # without inference.
 #
+# path_a below replicates R/15 STEP 2's path_a model exactly (panel,
+# country FE, clustered by date, post-split subsample) -- NOT STEP 1's
+# date-level OLS, which the paper reports separately as "Panel A". The two
+# give different numbers (STEP 1 is unweighted across dates; the panel
+# version here implicitly weights each date by how many of the five
+# ASEAN-5 countries have a valid [0,+1] return that day). See R/15's header
+# and STEP 1 comment for the full explanation. This bootstrap's path_a and
+# its CI should be compared against STEP 2 / this script, never against
+# STEP 1 / Panel A's date-level estimate.
+#
 # This script supplies that inference with a CLUSTER BOOTSTRAP BY EVENT DATE:
 # each replication resamples the distinct dates in the post-split panel WITH
 # REPLACEMENT (not rows), keeping every country's observation for each
