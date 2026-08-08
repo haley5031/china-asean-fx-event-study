@@ -39,6 +39,16 @@ for (d in c(paths$raw_external, paths$clean, paths$output_root,
   if (!dir.exists(d)) dir.create(d, recursive = TRUE, showWarnings = FALSE)
 }
 
+# --- Significance stars, paper convention -------------------------------------
+# The modelsummary/tinytable regression tables in R/05 use * < 0.1, ** < 0.05,
+# *** < 0.01 (set locally there via the `stars` vector passed to
+# modelsummary()). fixest::etable()'s own default differs
+# (*** < 0.001, ** < 0.01, * < 0.05), so every etable()-based comparison
+# table (R/11-14, R/16-18) would otherwise star the same p-value differently
+# from the paper's regression tables. Setting it once here, before any script
+# calls etable(), makes stars mean the same thing everywhere.
+setFixest_etable(signif.code = c("*" = 0.1, "**" = 0.05, "***" = 0.01))
+
 # --- Shared constants --------------------------------------------------------
 SAMPLE_START <- as.Date("2008-01-01")
 SAMPLE_END   <- as.Date("2020-05-29")
