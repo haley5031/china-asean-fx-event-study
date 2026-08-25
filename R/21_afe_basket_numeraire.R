@@ -217,17 +217,26 @@ print(as.data.frame(leg_cor), row.names = FALSE, digits = 4)
 write_csv(leg_cor, file.path(paths$out_tables, "afe_basket_leg_correlation.csv"))
 
 # =============================================================================
-# 6. Precision decomposition: why is the composite (beta_USD) estimated more
-#    precisely than either leg, when neither leg's interaction is individually
-#    significant? beta_USD_hat = beta_basket_hat + beta_D_hat EXACTLY (an
-#    algebraic identity of the OLS estimator given the row-level identity
-#    usd = basket + D, not just at the point estimate but for the ESTIMATOR),
-#    so:
+# 6. Precision decomposition. beta_USD is the quantity actually estimated --
+#    it is the panel's own dependent variable (usd_w01), regressed directly.
+#    Splitting it into beta_D + beta_basket is an ACCOUNTING DECOMPOSITION,
+#    not two independent measurements: beta_USD_hat = beta_basket_hat +
+#    beta_D_hat EXACTLY (an algebraic identity of the OLS estimator given the
+#    row-level identity usd = basket + D, holding for the estimator itself,
+#    not just the point estimate), so
 #        Var(beta_USD_hat) = Var(beta_basket_hat) + Var(beta_D_hat)
 #                             + 2*Cov(beta_basket_hat, beta_D_hat)
 #    The three variances are all observed (as SE^2 from the table above), so
 #    the covariance/correlation between the two legs' COEFFICIENT ESTIMATES
-#    is exactly identified -- solve for it rather than assume a sign.
+#    is exactly identified -- solved for below, not assumed.
+#
+#    Read the result the accounting way, not the "surprising significance"
+#    way: decomposing a directly-estimated quantity into two legs COSTS
+#    precision whenever those legs are anti-correlated by construction (here,
+#    because basket = usd - D), and that cost is exactly what the implied
+#    correlation below quantifies. beta_USD is not "a significant composite
+#    of insignificant parts" -- it is the estimate; the split is what loses
+#    power, for a checkable, mechanical reason.
 # =============================================================================
 precision <- identity_check %>%
   left_join(three_leg %>% filter(leg == "beta_USD")    %>% select(shock, matching, period, se_usd = se),
@@ -241,12 +250,13 @@ precision <- identity_check %>%
     var_basket      = se_basket^2,
     var_D           = se_D^2,
     implied_cov     = (var_usd - var_basket - var_D) / 2,
-    implied_corr    = implied_cov / (se_basket * se_D)
+    implied_corr    = implied_cov / (se_basket * se_D),
+    note            = "beta_USD is the estimated quantity; beta_basket + beta_D is an accounting decomposition of it that costs precision because the legs are anti-correlated by construction (basket = usd - D), not two independent estimates that happen to sum to something significant"
   ) %>%
-  select(shock, matching, period, se_usd, se_basket, se_D, implied_cov, implied_corr)
+  select(shock, matching, period, se_usd, se_basket, se_D, implied_cov, implied_corr, note)
 
 cat("\n\n=== E. Precision decomposition: implied correlation between the two legs' estimates ===\n\n")
-print(as.data.frame(precision), row.names = FALSE, digits = 4)
+print(as.data.frame(precision)[, 1:9], row.names = FALSE, digits = 4)
 write_csv(precision, file.path(paths$out_tables, "afe_basket_precision_decomposition.csv"))
 
 headline <- precision %>% filter(shock == "1Y", matching == "exact", period == "interaction")
@@ -255,44 +265,107 @@ raw_cor  <- leg_cor$cor_D_basket
 cat(sprintf(
   paste0(
     "\nHeadline case (1Y, exact matching, interaction term): SE(USD) = %.3f is\n",
-    "SMALLER than SE(basket) = %.3f and SE(D) = %.3f. Since beta_USD_hat =\n",
-    "beta_basket_hat + beta_D_hat is a SUM (not a difference), this requires a\n",
-    "NEGATIVE implied correlation between the two legs' coefficient estimates\n",
-    "(implied corr = %.3f here) -- summing two noisy, negatively-correlated\n",
-    "legs cancels a shared component of their sampling error, the same way\n",
-    "differencing two POSITIVELY correlated series would. The raw-return\n",
+    "SMALLER than SE(basket) = %.3f and SE(D) = %.3f. beta_USD is the estimated\n",
+    "quantity here -- it is not built FROM the two legs, the two legs are what\n",
+    "you get if you decompose it. Since beta_USD_hat = beta_basket_hat +\n",
+    "beta_D_hat is a SUM, a decomposition that COSTS precision (both legs\n",
+    "noisier than the whole) requires a NEGATIVE implied correlation between\n",
+    "the legs' coefficient estimates (implied corr = %.3f here). The raw-return\n",
     "correlation between D_w01 and basket_w01 across the common sample is\n",
     "%.3f, consistent in sign: basket is CONSTRUCTED as usd - D, so it is\n",
-    "mechanically negatively correlated with D whenever D's own variance is not\n",
+    "mechanically anti-correlated with D whenever D's own variance is not\n",
     "fully offset by a matching positive covariance with usd (which it is not --\n",
     "these are two different markets, ASEAN-vs-USD and USD-vs-AFE-basket).\n",
-    "Read this precisely: the composite's precision is NOT an artefact -- it\n",
-    "comes from the two legs' errors offsetting when added back together, and\n",
-    "that offsetting is a direct, checkable consequence of how the basket leg\n",
-    "was constructed in the first place, not a coincidence of this one sample.\n"
+    "This is a checkable, mechanical cost of decomposing usd into basket + D,\n",
+    "not a coincidence of this one sample.\n"
   ),
   headline$se_usd, headline$se_basket, headline$se_D, headline$implied_corr, raw_cor
 ))
 
 # =============================================================================
-# 7. Substantive finding, stated in the CSV itself, not only in prose:
-#    the basket regime interaction is NOT detectable -- this is a whole-
-#    sample average result, not a post-2015 phenomenon.
+# 7. Substantive findings, stated in the CSV itself, not only in prose. Two
+#    separate claims, kept separate because they have different evidentiary
+#    weight:
+#      (i)  NEGATIVE, established: the break is NOT in the ASEAN-vs-basket
+#           leg. p = 0.48-0.92 across all four specs, coefficients small and
+#           unstable in sign (-1.26 to +0.40) -- nothing here looks like a
+#           regime break, in either direction.
+#      (ii) NOT established: that the break "lives in" the dollar leg
+#           instead. beta_D's own interaction is p = 0.187 (panel) at its
+#           best (1Y, exact) -- underpowered, not a demonstrated attribution.
+#           Do not read (i) as evidence FOR (ii); it only rules out one
+#           candidate location, it does not confirm the other.
 # =============================================================================
 basket_int <- three_leg %>% filter(leg == "beta_basket", period == "interaction")
-finding <- basket_int %>%
-  mutate(
-    finding = "whole-sample average, NOT a post-2015 phenomenon",
-    detail  = sprintf(
-      "pre/post interaction on the basket outcome is not statistically detectable (p = %.3f); the beta_basket result documented elsewhere is a full-sample average effect, not evidence of a regime break",
-      pval)
-  ) %>%
-  select(shock, matching, coef, se, pval, finding, detail)
+D_int       <- three_leg %>% filter(leg == "beta_D",      period == "interaction")
 
-cat("\n\n=== F. Substantive finding (also written into the CSV): basket regime interaction ===\n\n")
-print(as.data.frame(finding), row.names = FALSE, digits = 3)
+finding <- basket_int %>%
+  select(shock, matching, basket_coef = coef, basket_se = se, basket_pval = pval) %>%
+  left_join(D_int %>% select(shock, matching, D_coef = coef, D_se = se, D_pval = pval),
+            by = c("shock", "matching")) %>%
+  mutate(
+    established_claim     = "basket leg pre/post interaction is not detectable (stable, near-zero, p = 0.48-0.92): the whole-sample beta_basket result is a full-sample average, not a post-2015 phenomenon",
+    NOT_established_claim = "this does NOT show the break is in the dollar leg instead -- beta_D's own interaction (p shown here) is underpowered, not a demonstrated attribution; the panel decomposition rules out one location without confirming the other"
+  )
+
+cat("\n\n=== F. Substantive findings (also written into the CSV): what the decomposition does and does not establish ===\n\n")
+print(as.data.frame(finding)[, c("shock", "matching", "basket_coef", "basket_se", "basket_pval", "D_coef", "D_se", "D_pval")],
+      row.names = FALSE, digits = 3)
 write_csv(finding, file.path(paths$out_tables, "afe_basket_regime_finding.csv"))
+
+# =============================================================================
+# 8. beta_D at the DATE level, alongside the panel version. D_w01 is a single
+#    time series that the panel replicates five times (once per country, same
+#    value each time); the panel regression's precision on beta_D therefore
+#    does not reflect five independent observations of the dollar factor, just
+#    one series seen five times with country FE and date-clustered SEs doing
+#    the (correct) discounting. The date-level regression -- one row per
+#    calendar date, no country dimension, plain OLS -- is the natural
+#    estimator for a genuinely one-series outcome. Reported alongside the
+#    panel version so the attribution question can be judged on both.
+# =============================================================================
+dates_d <- common01 %>%
+  distinct(date, .keep_all = TRUE) %>%
+  select(date, post_split, D_w01, shock_1y, shock_1y_roll, shock_5y, shock_5y_roll)
+
+D_date_level <- bind_rows(lapply(names(SHOCKS), function(slab) {
+  bind_rows(lapply(names(SHOCKS[[slab]]), function(mlab) {
+    shockvar <- SHOCKS[[slab]][[mlab]]
+    m <- lm(as.formula(sprintf("D_w01 ~ %s * post_split", shockvar)), data = dates_d)
+    ct <- summary(m)$coefficients
+    term <- paste0(shockvar, ":post_split")
+    data.frame(shock = slab, matching = mlab, estimator = "date-level OLS",
+               term = "interaction", coef = ct[term, 1], se = ct[term, 2],
+               pval = ct[term, 4], n = nobs(m), row.names = NULL)
+  }))
+}))
+
+D_panel_level <- D_int %>%
+  transmute(shock, matching, estimator = "panel, country FE, clustered",
+            term = "interaction", coef, se, pval, n = nobs)
+
+D_both_levels <- bind_rows(D_date_level, D_panel_level) %>%
+  arrange(shock, matching, estimator)
+
+cat("\n\n=== G. beta_D interaction: date-level OLS vs. panel, country FE, clustered ===\n\n")
+print(as.data.frame(D_both_levels), row.names = FALSE, digits = 4)
+write_csv(D_both_levels, file.path(paths$out_tables, "afe_basket_D_date_vs_panel.csv"))
+
+d_1y_exact <- D_both_levels %>% filter(shock == "1Y", matching == "exact")
+cat(sprintf(
+  paste0(
+    "\n1Y, exact matching: date-level p = %.3f vs. panel p = %.3f. %s\n"
+  ),
+  d_1y_exact$pval[d_1y_exact$estimator == "date-level OLS"],
+  d_1y_exact$pval[d_1y_exact$estimator == "panel, country FE, clustered"],
+  if (d_1y_exact$pval[d_1y_exact$estimator == "date-level OLS"] <
+      d_1y_exact$pval[d_1y_exact$estimator == "panel, country FE, clustered"])
+    "The date-level estimator is TIGHTER, but check the margin before treating attribution as resolved."
+  else
+    "The date-level estimator is NOT tighter -- the panel's p = 0.187 was not an artefact of treating one series as five; attribution to the dollar leg remains underpowered on the natural one-series estimator too."
+))
 
 message("\nSaved: output/tables/afe_basket_window_grid.csv, afe_basket_three_leg_table.csv,",
         "\n       afe_basket_identity_check.csv, afe_basket_leg_correlation.csv,",
-        "\n       afe_basket_precision_decomposition.csv, afe_basket_regime_finding.csv")
+        "\n       afe_basket_precision_decomposition.csv, afe_basket_regime_finding.csv,",
+        "\n       afe_basket_D_date_vs_panel.csv")
