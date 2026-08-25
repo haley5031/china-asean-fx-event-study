@@ -17,6 +17,10 @@
 #   3. CONTROLS. Merges the external daily series (VIX, broad dollar, 2Y
 #      Treasury, Brent) for the explanatory-power checks.
 #
+#   4. WIDE/FORWARD WINDOWS. Adds [-5,+1] and [-5,0] outcome windows
+#      (usd_w5p1/cny_w5p1, usd_w5m0/cny_w5m0) alongside [0], [0,+1], [-1,+1],
+#      for the window-robustness extension in R/23.
+#
 # Input : data-clean/fx_returns_wide.csv
 #         data-clean/policy_shocks_main.csv
 #         data-clean/external_daily.csv        (from R/09_external_data.R)
@@ -222,6 +226,8 @@ panel <- panel %>%
 # [0]      r_t
 # [0,+1]   r_t + r_{t+1}
 # [-1,+1]  r_{t-1} + r_t + r_{t+1}
+# [-5,+1]  r_{t-5} + ... + r_t + r_{t+1}   (wide/forward window robustness)
+# [-5,0]   r_{t-5} + ... + r_t
 panel <- panel %>%
   group_by(country) %>%
   arrange(date, .by_group = TRUE) %>%
@@ -229,9 +235,21 @@ panel <- panel %>%
     usd_w0   = fx_return_usd,
     usd_w01  = fx_return_usd + lead(fx_return_usd, 1),
     usd_wm11 = lag(fx_return_usd, 1) + fx_return_usd + lead(fx_return_usd, 1),
+    usd_w5p1 = lag(fx_return_usd, 5) + lag(fx_return_usd, 4) +
+               lag(fx_return_usd, 3) + lag(fx_return_usd, 2) +
+               lag(fx_return_usd, 1) + fx_return_usd + lead(fx_return_usd, 1),
+    usd_w5m0 = lag(fx_return_usd, 5) + lag(fx_return_usd, 4) +
+               lag(fx_return_usd, 3) + lag(fx_return_usd, 2) +
+               lag(fx_return_usd, 1) + fx_return_usd,
     cny_w0   = fx_return_cny,
     cny_w01  = fx_return_cny + lead(fx_return_cny, 1),
     cny_wm11 = lag(fx_return_cny, 1) + fx_return_cny + lead(fx_return_cny, 1),
+    cny_w5p1 = lag(fx_return_cny, 5) + lag(fx_return_cny, 4) +
+               lag(fx_return_cny, 3) + lag(fx_return_cny, 2) +
+               lag(fx_return_cny, 1) + fx_return_cny + lead(fx_return_cny, 1),
+    cny_w5m0 = lag(fx_return_cny, 5) + lag(fx_return_cny, 4) +
+               lag(fx_return_cny, 3) + lag(fx_return_cny, 2) +
+               lag(fx_return_cny, 1) + fx_return_cny,
     # Control returns aggregated over the same window as the outcome, so a
     # [0,+1] regression controls for [0,+1] movement in the control.
     ctrl_dollar_w01 = ret_broad_dollar + lead(ret_broad_dollar, 1),

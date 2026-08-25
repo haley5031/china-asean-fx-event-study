@@ -57,11 +57,12 @@ source("run_all.R")
 ```
 
 This rebuilds `data-clean/` and `output/` from the files in `data-raw/`.
-`run_all.R` now runs every script 01-20 (R/11-17 were wired in later and are
-no longer separate from this list -- see below). In a verification run of
-the current branch, the full 01-20 pipeline completed in 3-6 minutes with no
-errors across two clean-state runs (most of the variation, and most of the
-time either way, is one script, `R/19`, which runs a 2,000-replication
+`run_all.R` now runs every script 01-25 (R/11-17 were wired in later and are
+no longer separate from this list -- see below; R/21-25 are the most recent
+supervisor-response extensions, described in their own section below). In a
+verification run of the current branch, the full 01-25 pipeline completed
+with no errors across clean-state runs (most of the variation, and most of
+the time either way, is one script, `R/19`, which runs a 2,000-replication
 bootstrap; treat "a few minutes" as the realistic expectation rather than
 either single figure). It downloads nothing on that run if the FRED files
 already sitting in `data-raw/external/` are left in place -- delete that
@@ -78,11 +79,11 @@ The "paper exhibit" column below is the label used *inside this codebase* --
 script comments, console messages, and `docs/data_dictionary.md` -- not a
 citation I have cross-checked against the current Overleaf draft. Confirm the
 numbering still matches before citing this table to anyone. Every script
-01-20 is now called by `run_all.R`, in dependency order rather than numeric
+01-25 is now called by `run_all.R`, in dependency order rather than numeric
 order -- they mostly coincide, but not entirely: `R/14` runs before `R/13`
 (R/13's control ladder now uses the AFE dollar control that only R/14
-fetches/caches). See the comment above R/09 in `run_all.R` for the full
-reasoning behind the order.
+fetches/caches), and `R/21` runs after `R/14` for the same reason. See the
+comment above R/09 in `run_all.R` for the full reasoning behind the order.
 
 | Script | What it does | Output | Paper exhibit (as labeled in-code) |
 |---|---|---|---|
@@ -113,6 +114,12 @@ reasoning behind the order.
 | `18_fomc_regime_robustness.R` | Re-estimates the H3 regime interaction excluding event dates within 1 trading day of a scheduled FOMC decision (headline cut), excluding all of 2020, and excluding dates near *any* FOMC meeting including unscheduled ones (sensitivity cut), alongside the baseline. | `output/tables/regime_fomc_2020_robustness.csv` | H3 robustness appendix |
 | `19_mediation_bootstrap.R` | Cluster bootstrap (resampling event dates, 2,000 replications) giving a 95% CI on the mediation path-*b* coefficient and the indirect effect a×b from `R/15`. | `output/tables/mediation_bootstrap.csv`, `mediation_bootstrap_table.tex` | mediation section |
 | `20_heterogeneity_ftest.R` | Joint F-test that Table 3's four country-interaction terms (relative to Indonesia) are all zero, for both shock measures. | `output/tables/heterogeneity_joint_ftest.csv` | H2 robustness |
+| `21_afe_basket_numeraire.R` | A third numeraire: quotes each ASEAN currency against the AFE dollar-index basket (`r_basket = r_usd - D_t`, `D_t` = the AFE index's own return), so coefficients are directly comparable to the USD-quoted tables without either the dollar-anchor problem (unlike LCU/USD) or the renminbi leg (unlike the RMB cross rate, R/11). Verifies `beta_basket = beta_USD - beta_D` numerically, then runs the pre/post-2015 regime split on the basket outcome. | `output/tables/afe_basket_decomposition.csv`, `afe_basket_regime_split.csv` | third-numeraire robustness (Section 4.5 follow-up) |
+| `22_china_regime_split.R` | Splits the sample into three China exchange-rate regimes (2008-06/2010 crisis re-peg, 06/2010-08/2015 managed float, 08/2015- post-fixing-reform) instead of R/12's two-way pre/post-2015 split. Reports each regime's own response directly, the R2-vs-R1 and R3-vs-R2 differences each estimated directly on its own pairwise subsample (not inferred by subtracting coefficients), and a joint F-test that all three are equal -- for both shock measures and matching rules, with event counts per regime reported first. | `output/tables/china_regime_event_counts.csv`, `china_regime_own_response.csv`, `china_regime_diffs.csv`, `china_regime_ftest.csv` | trilemma/regime robustness (Section 4.7 follow-up) |
+| `23_window_wide.R` | Extends the window-robustness machinery (R/06's plain FE ladder, R/13's regime-interaction grid) to two wider/forward-looking windows, `[-5,+1]` and `[-5,0]` (built in R/10), across both numeraires, both shock measures, and both matching rules. | `output/tables/window_wide_baseline.csv`, `window_wide_regime.csv` | window-robustness appendix follow-up |
+| `24_forward_local_projections.R` | Forward local projections: cumulative `[0,+h]` FX response for h = 0..10, one regression per horizon, country FE, clustered by date, both shock measures. | `output/tables/lp_horizon_response.csv` | window-robustness appendix follow-up |
+| `fig_lp_path.R` | Coefficient-path plot for R/24, with 90% and 95% bands, one panel per shock measure. | `output/figures/fig_lp_coefficient_path.*` | companion figure to R/24 |
+| `25_announcement_dummy_placebo.R` | Two checks on whether the announcement day itself carries information beyond the measured surprise: (A) an announcement-day dummy alongside the continuous shock in the baseline spec; (B) the 9 in-sample announcement dates with an exactly-zero measured surprise, tested as a placebo group, with an explicit minimum-detectable-effect statement given how few dates that is. | `output/tables/announcement_dummy.csv`, `placebo_zero_surprise.csv` | window-robustness appendix follow-up |
 
 `R/11` through `R/17` were originally written as standalone supervisor-response
 scripts (see `docs/RUN_ME_FIRST.md` for the original hand-off notes) and, for
@@ -190,6 +197,26 @@ BLAS/compiler builds, not a bug). It has not changed any digit that is
 actually reported at the precision these tables use. If a fresh run produces
 a difference bigger than that, treat it as a real discrepancy and investigate
 before trusting the new numbers.
+
+**The AFE-basket outcome (R/21) is not the mediation direct effect.** `beta_basket`
+imposes a unit pass-through from the AFE dollar index to the ASEAN outcome
+(`r_basket = r_usd - D_t`), whereas R/15's mediation decomposition ESTIMATES
+that pass-through (`path_b ~ 0.30` post-2015). The two are different objects
+and differ numerically by construction -- `beta_basket` is not a robustness
+check on R/15's direct effect `c'` and should not be read as one.
+
+**China regime split (R/22), R1's event count.** The 2008-06/2010 crisis
+re-peg regime (R1) has only 8-10 nonzero-surprise event dates depending on
+shock measure/matching rule -- above the 5-event floor this script flags, but
+still thin next to R2 (30-43) and R3 (18-23). Read R1's own-response estimate
+with that in mind even though it clears the floor.
+
+**Zero-surprise placebo (R/25), n = 9.** The in-sample announcement dates with
+an exactly-zero measured 1Y surprise number only 9. R/25 states the
+resulting minimum detectable effect explicitly (roughly 0.12 percentage
+points at conventional power, against typical daily FX moves of 0.3-0.7%):
+treat a null result there as low-powered, not as evidence the measure is
+clean.
 
 **The FRED cache.** `R/09` and `R/14` between them download and cache all six
 FRED series into `data-raw/external/`; those six files are committed, so a
