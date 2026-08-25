@@ -64,6 +64,7 @@ message("== 24: forward local projections ==");                   source("R/24_f
 message("== fig_lp: LP coefficient-path plot ==");                source("R/fig_lp_path.R")
 message("== 25: announcement-day dummy + zero-surprise placebo =="); source("R/25_announcement_dummy_placebo.R")
 message("== 26: full leave-one-out on the regime interaction ==="); source("R/26_regime_interaction_full_loo.R")
+message("== 27: instrument-type Table 11, excl. 26 Nov 2008 ==="); source("R/27_instrument_type_excl_nov2008.R")
 
 message("== DONE. See data-clean/ and output/. ==")
 

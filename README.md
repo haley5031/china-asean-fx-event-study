@@ -121,6 +121,7 @@ comment above R/09 in `run_all.R` for the full reasoning behind the order.
 | `fig_lp_path.R` | Coefficient-path plot for R/24, with 90% and 95% bands, one panel per shock measure. | `output/figures/fig_lp_coefficient_path.*` | companion figure to R/24 |
 | `25_announcement_dummy_placebo.R` | Two checks on whether the announcement day itself carries information beyond the measured surprise: (A) an announcement-day dummy alongside the continuous shock in the baseline spec; (B) the 9 in-sample announcement dates with an exactly-zero measured surprise, tested as a placebo group. SE=0.042, 95% CI=[-0.043, 0.122], MDE at 80% power = 0.12pp -- smaller than typical daily FX volatility (0.3-0.7%), so this is a reasonably tight null supporting the shock measure's cleanliness, not an underpowered one; the CSV also carries the one legitimate caveat (only 9 treated clusters, so cluster-robust SE's asymptotic justification is on thinner ground than the total cluster count suggests). | `output/tables/announcement_dummy.csv`, `placebo_zero_surprise.csv` | window-robustness appendix follow-up |
 | `26_regime_interaction_full_loo.R` | R/13 check 3's Appendix B influence check drops only the 18 POST-split events; this extends it to ALL nonzero-surprise events (56/71/61/76 depending on tenor/matching rule, pre AND post), dropped one at a time from `usd_w01 ~ shock * post_split \| country`, reporting both the interaction term and the pre-split main term for every drop. Excluding 26 Nov 2008 (the single date R/22 showed carries 98% of R1's own response) specifically: the regime interaction SURVIVES at 5% in 3 of 4 specifications (1Y exact p=0.008, 1Y rolled p=0.047, 5Y exact p=0.005) and misses narrowly in the fourth (5Y rolled p=0.069, i.e. only 10%-significant). The pre-split main coefficient itself roughly halves (e.g. 1Y exact: +0.678 -> +0.383) but stays positive, because the 38-event pre-split average still includes R2's 30 events even with the single largest one removed. | `output/tables/regime_interaction_full_loo.csv`, `regime_interaction_excl_nov2008.csv` | H3 robustness appendix (Appendix B completion) |
+| `27_instrument_type_excl_nov2008.R` | Confirms 26 Nov 2008 classifies cleanly as `quantity` (isdRRR & isdLDR both TRUE, both quantity flags; isdRevrepo & isdMLF both FALSE) -- not ambiguous between price and quantity. Re-estimates R/17's Table 11 / Equation 9 instrument-type specification (price and quantity, each at pre-split level, post-split level, and post-minus-pre difference -- six cells) with and without that date. **The quantity-response CHANGE across the split, Section 4.7's headline instrument-type claim, does NOT survive**: -0.991 (p=0.031) with all events falls to -0.617 (p=0.250) excluding 26 Nov 2008 -- the same single date drives this result as drives R1's own response. Price-leg cells are unaffected (26 Nov 2008 is a quantity-only event, so `shock_price` on that date is already zero). | `output/tables/instrument_table11_excl_nov2008.csv`, `instrument_nov2008_classification.csv` | instrument-mix section (Section 4.7 dependency check) |
 
 `R/11` through `R/17` were originally written as standalone supervisor-response
 scripts (see `docs/RUN_ME_FIRST.md` for the original hand-off notes) and, for
@@ -236,6 +237,18 @@ R2's 30 events). Net: the regime break is not solely a 26 Nov 2008 artefact,
 but it is thinner than the baseline p-values alone suggest, and the 5Y
 rolled specification should be reported as only marginally robust to this
 check.
+
+**Instrument-type quantity claim (R/27) also traces to 26 Nov 2008.** Section
+4.7's claim that the quantity-instrument response changes significantly
+across the 2015 split (-0.991, p=0.031, R/17's `instrument_tests_claim2.csv`)
+is the SAME finding as R1's own response through the shared 26 Nov 2008
+observation (a joint RRR + benchmark-rate/LDR cut, confirmed to classify
+cleanly as `quantity`, not ambiguous between price and quantity). Excluding
+that one date, the change falls to -0.617, p=0.250 -- does not survive. The
+price-instrument results (R/17 Claim 1/2, unaffected by this exclusion since
+26 Nov 2008 carries no price-leg shock) are the ones actually supporting a
+regime-dependent instrument-mix story; the quantity side of that story does
+not hold up once this date is removed.
 
 **Zero-surprise placebo (R/25), n = 9.** The in-sample announcement dates with
 an exactly-zero measured 1Y surprise number only 9. Despite that small count,
