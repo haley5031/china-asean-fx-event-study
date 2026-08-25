@@ -20,3 +20,10 @@ output/*
 !output/figures/
 output/models.rds
 Archive.zip
+
+# PDF companions ggsave()/save_fig() write alongside each figure's PNG. Only
+# the PNGs have ever been tracked (see R/fig_theme.R); the PDFs are a
+# per-render byproduct whose content depends on the local Cairo/font/ragg
+# stack, so they are left untracked rather than churning the diff on every
+# run_all.R run.
+output/figures/*.pdf
