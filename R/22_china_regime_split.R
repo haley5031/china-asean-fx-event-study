@@ -28,11 +28,19 @@
 # first: if a regime has too few nonzero surprises, that is flagged rather
 # than treated as an estimable difference.
 #
+# Section 4 adds a leave-one-out check on R1's own response: it rests on only
+# 8 nonzero-surprise dates, one of which (26 Nov 2008, the RRR/benchmark-rate
+# easing response to the global financial crisis) is the largest-magnitude
+# surprise in the whole sample. Each event is dropped in turn for R1 and,
+# symmetrically, for R2; 26 Nov 2008 is also reported as its own labelled row.
+#
 # Input : data-clean/reg_data_ext_main.csv   (from R/10)
 # Output: output/tables/china_regime_event_counts.csv
 #         output/tables/china_regime_own_response.csv
 #         output/tables/china_regime_diffs.csv
 #         output/tables/china_regime_ftest.csv
+#         output/tables/china_regime_r1_r2_leave_one_out.csv
+#         output/tables/china_regime_r1_excl_nov2008.csv
 # =============================================================================
 
 source("R/00_setup.R")
@@ -197,4 +205,113 @@ for (i in seq_len(nrow(ftest))) {
               else "cannot reject equal-response null at 5%"))
 }
 
-message("\nSaved: output/tables/china_regime_*.csv")
+# =============================================================================
+# 4. Leave-one-out on R1 and R2's own response (usd_w01, shock_1y, exact
+#    matching -- R1's exact and rolled event sets are identical, per section
+#    0, so exact suffices; done for both regimes so the comparison is
+#    symmetric, not just run on R1 because it is the one under suspicion).
+#
+# R1's own response (+0.825, p = 0.006) rests on only 8 nonzero-surprise
+# dates, one of which -- 26 Nov 2008 -- is the largest-magnitude surprise in
+# the entire sample (shock_1y = -0.50, the RRR and benchmark-rate easing
+# response to the global financial crisis). Barnes & Pancost (2010) warn
+# exactly about this in daily event studies: a single dominant observation
+# can carry a small-N result. Each nonzero-surprise date is dropped in turn,
+# the model re-estimated on the regime subsample (that date's rows removed
+# entirely, not just its shock zeroed -- same convention as R/13's leave-one-
+# out), and the full range of resulting coefficients/p-values reported.
+# =============================================================================
+loo_regime <- function(regime_lo, regime_hi, label) {
+  events <- panel %>%
+    filter(date > regime_lo, date <= regime_hi, event_day == 1, shock_1y != 0) %>%
+    distinct(date, shock_1y) %>%
+    arrange(date)
+
+  base_d <- panel %>% filter(date > regime_lo, date <= regime_hi)
+  m_base <- feols(usd_w01 ~ shock_1y | country, cluster = ~date, data = base_d)
+  base_coef <- as.data.frame(coeftable(m_base))["shock_1y", "Estimate"]
+
+  loo <- bind_rows(lapply(seq_len(nrow(events)), function(i) {
+    d <- events$date[i]
+    dd <- filter(base_d, date != d)
+    m <- feols(usd_w01 ~ shock_1y | country, cluster = ~date, data = dd)
+    ct <- as.data.frame(coeftable(m))
+    data.frame(regime = label, dropped_date = as.character(d),
+               shock_dropped = events$shock_1y[i],
+               coef = ct["shock_1y", "Estimate"], se = ct["shock_1y", "Std. Error"],
+               pval = ct["shock_1y", grep("^Pr", names(ct))[1]],
+               shift_from_baseline = ct["shock_1y", "Estimate"] - base_coef,
+               row.names = NULL, stringsAsFactors = FALSE)
+  }))
+  list(base_coef = base_coef, loo = loo, n_events = nrow(events))
+}
+
+r1_loo <- loo_regime(SAMPLE_START - 1, R1_END, "R1")
+r2_loo <- loo_regime(R1_END, R2_END, "R2")
+
+cat("\n\n=== 4. Leave-one-out, R1 and R2 (usd_w01, shock_1y, country FE, clustered) ===\n\n")
+cat(sprintf("R1 baseline (all %d events): coef = %+.3f\n", r1_loo$n_events, r1_loo$base_coef))
+print(r1_loo$loo[order(r1_loo$loo$coef), ], row.names = FALSE, digits = 3)
+cat(sprintf("\nR1 range across leave-one-out: [%.3f, %.3f]; p stays below 0.05 in %d of %d drops.\n",
+            min(r1_loo$loo$coef), max(r1_loo$loo$coef),
+            sum(r1_loo$loo$pval < 0.05), nrow(r1_loo$loo)))
+most_infl_r1 <- r1_loo$loo[which.max(abs(r1_loo$loo$shift_from_baseline)), ]
+cat(sprintf("Most influential single date: %s (shock = %+.3f) -- dropping it shifts the\n",
+            most_infl_r1$dropped_date, most_infl_r1$shock_dropped))
+cat(sprintf("coefficient from %+.3f to %+.3f (shift = %+.3f, %.0f%% of baseline).\n",
+            r1_loo$base_coef, most_infl_r1$coef, most_infl_r1$shift_from_baseline,
+            100 * abs(most_infl_r1$shift_from_baseline) / abs(r1_loo$base_coef)))
+
+cat(sprintf("\nR2 baseline (all %d events): coef = %+.3f\n", r2_loo$n_events, r2_loo$base_coef))
+cat(sprintf("R2 range across leave-one-out: [%.3f, %.3f]; p stays below 0.05 in %d of %d drops.\n",
+            min(r2_loo$loo$coef), max(r2_loo$loo$coef),
+            sum(r2_loo$loo$pval < 0.05), nrow(r2_loo$loo)))
+most_infl_r2 <- r2_loo$loo[which.max(abs(r2_loo$loo$shift_from_baseline)), ]
+cat(sprintf("Most influential single date: %s (shock = %+.3f) -- shift = %+.3f (%.0f%% of baseline).\n",
+            most_infl_r2$dropped_date, most_infl_r2$shock_dropped,
+            most_infl_r2$shift_from_baseline,
+            100 * abs(most_infl_r2$shift_from_baseline) / abs(r2_loo$base_coef)))
+
+loo_tab <- bind_rows(r1_loo$loo, r2_loo$loo)
+write_csv(loo_tab, file.path(paths$out_tables, "china_regime_r1_r2_leave_one_out.csv"))
+
+# --- R1 with 26 Nov 2008 excluded specifically, as its own row -------------
+nov2008 <- as.Date("2008-11-26")
+stopifnot(nov2008 %in% as.Date(r1_loo$loo$dropped_date))
+nov_row <- r1_loo$loo[r1_loo$loo$dropped_date == as.character(nov2008), ]
+
+d_r1_all   <- panel %>% filter(date <= R1_END)
+d_excl_nov <- panel %>% filter(date <= R1_END, date != nov2008)
+m_r1_all   <- feols(usd_w01 ~ shock_1y | country, cluster = ~date, data = d_r1_all)
+m_excl_nov <- feols(usd_w01 ~ shock_1y | country, cluster = ~date, data = d_excl_nov)
+ct_all      <- as.data.frame(coeftable(m_r1_all))
+ct_excl_nov <- as.data.frame(coeftable(m_excl_nov))
+
+r1_excl_nov <- data.frame(
+  spec = c("R1, all 8 events", "R1, excl. 26 Nov 2008 (RRR + rate cut, largest surprise)"),
+  coef = c(ct_all["shock_1y", "Estimate"],      ct_excl_nov["shock_1y", "Estimate"]),
+  se   = c(ct_all["shock_1y", "Std. Error"],    ct_excl_nov["shock_1y", "Std. Error"]),
+  pval = c(ct_all["shock_1y", grep("^Pr", names(ct_all))[1]],
+           ct_excl_nov["shock_1y", grep("^Pr", names(ct_excl_nov))[1]]),
+  nobs = c(nobs(m_r1_all), nobs(m_excl_nov)),
+  row.names = NULL, stringsAsFactors = FALSE
+)
+
+cat("\n\n=== 5. R1 with 26 Nov 2008 excluded, as its own row ===\n\n")
+print(r1_excl_nov, row.names = FALSE, digits = 3)
+write_csv(r1_excl_nov, file.path(paths$out_tables, "china_regime_r1_excl_nov2008.csv"))
+
+if (r1_excl_nov$pval[2] >= 0.05 && r1_excl_nov$pval[1] < 0.05) {
+  cat("\nR1's significant own-response DOES NOT survive dropping 26 Nov 2008 alone:\n",
+      "p moves from ", sprintf("%.3f", r1_excl_nov$pval[1]), " to ",
+      sprintf("%.3f", r1_excl_nov$pval[2]),
+      ". Say this plainly: the pre-2015 result is substantially carried by one\n",
+      "event, not a stable feature of the 2008-2010 crisis re-peg window.\n", sep = "")
+} else {
+  cat("\nR1's own response survives dropping 26 Nov 2008 alone (p stays below 0.05\n",
+      "either way), so while it is the most influential single date, it is not\n",
+      "solely responsible for R1's significance.\n", sep = "")
+}
+
+message("\nSaved: output/tables/china_regime_*.csv, china_regime_r1_r2_leave_one_out.csv,",
+        "\n       china_regime_r1_excl_nov2008.csv")

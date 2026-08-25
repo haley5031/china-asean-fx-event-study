@@ -115,7 +115,7 @@ comment above R/09 in `run_all.R` for the full reasoning behind the order.
 | `19_mediation_bootstrap.R` | Cluster bootstrap (resampling event dates, 2,000 replications) giving a 95% CI on the mediation path-*b* coefficient and the indirect effect a×b from `R/15`. | `output/tables/mediation_bootstrap.csv`, `mediation_bootstrap_table.tex` | mediation section |
 | `20_heterogeneity_ftest.R` | Joint F-test that Table 3's four country-interaction terms (relative to Indonesia) are all zero, for both shock measures. | `output/tables/heterogeneity_joint_ftest.csv` | H2 robustness |
 | `21_afe_basket_numeraire.R` | A third numeraire: quotes each ASEAN currency against the AFE dollar-index basket (`r_basket = r_usd - D_t`, `D_t` = the AFE index's own return), so coefficients are directly comparable to the USD-quoted tables without either the dollar-anchor problem (unlike LCU/USD) or the renminbi leg (unlike the RMB cross rate, R/11). One consolidated three-leg table (`usd = basket + D`) at `[0,+1]`, both tenors, both matching rules, pre/post/interaction, coefficient+SE+p-value for every leg; verifies the identity numerically; and backs out the implied correlation between the two legs' coefficient estimates from the three observed variances, to show that decomposing the directly-estimated `beta_USD` into two anti-correlated legs costs precision -- a mechanical accounting fact, not a surprising composite. Also compares `beta_D`'s regime interaction at the date level (the natural estimator for a one-series outcome the panel repeats five times) against the panel version. | `output/tables/afe_basket_window_grid.csv`, `afe_basket_three_leg_table.csv`, `afe_basket_identity_check.csv`, `afe_basket_leg_correlation.csv`, `afe_basket_precision_decomposition.csv`, `afe_basket_regime_finding.csv`, `afe_basket_D_date_vs_panel.csv` | third-numeraire robustness (Section 4.5 follow-up) |
-| `22_china_regime_split.R` | Splits the sample into three China exchange-rate regimes (2008-06/2010 crisis re-peg, 06/2010-08/2015 managed float, 08/2015- post-fixing-reform) instead of R/12's two-way pre/post-2015 split. Reports each regime's own response directly, the R2-vs-R1 and R3-vs-R2 differences each estimated directly on its own pairwise subsample (not inferred by subtracting coefficients), and a joint F-test that all three are equal -- for both shock measures and matching rules, with event counts per regime reported first. | `output/tables/china_regime_event_counts.csv`, `china_regime_own_response.csv`, `china_regime_diffs.csv`, `china_regime_ftest.csv` | trilemma/regime robustness (Section 4.7 follow-up) |
+| `22_china_regime_split.R` | Splits the sample into three China exchange-rate regimes (2008-06/2010 crisis re-peg, 06/2010-08/2015 managed float, 08/2015- post-fixing-reform) instead of R/12's two-way pre/post-2015 split. Reports each regime's own response directly, the R2-vs-R1 and R3-vs-R2 differences each estimated directly on its own pairwise subsample (not inferred by subtracting coefficients), and a joint F-test that all three are equal -- for both shock measures and matching rules, with event counts per regime reported first. **R1's own response (+0.825, p=0.006) does not survive a leave-one-out check**: dropping 26 Nov 2008 (the RRR/benchmark-rate easing response to the financial crisis, the largest-magnitude surprise in the sample) alone collapses it to +0.019, p=0.969 -- see the caveat below. | `output/tables/china_regime_event_counts.csv`, `china_regime_own_response.csv`, `china_regime_diffs.csv`, `china_regime_ftest.csv`, `china_regime_r1_r2_leave_one_out.csv`, `china_regime_r1_excl_nov2008.csv` | trilemma/regime robustness (Section 4.7 follow-up) |
 | `23_window_wide.R` | Extends the window-robustness machinery (R/06's plain FE ladder, R/13's regime-interaction grid) to two wider/forward-looking windows, `[-5,+1]` and `[-5,0]` (built in R/10), across both numeraires, both shock measures, and both matching rules. | `output/tables/window_wide_baseline.csv`, `window_wide_regime.csv` | window-robustness appendix follow-up |
 | `24_forward_local_projections.R` | Forward local projections: cumulative `[0,+h]` FX response for h = 0..10, one regression per horizon, country FE, clustered by date, both shock measures. | `output/tables/lp_horizon_response.csv` | window-robustness appendix follow-up |
 | `fig_lp_path.R` | Coefficient-path plot for R/24, with 90% and 95% bands, one panel per shock measure. | `output/figures/fig_lp_coefficient_path.*` | companion figure to R/24 |
@@ -205,11 +205,20 @@ that pass-through (`path_b ~ 0.30` post-2015). The two are different objects
 and differ numerically by construction -- `beta_basket` is not a robustness
 check on R/15's direct effect `c'` and should not be read as one.
 
-**China regime split (R/22), R1's event count.** The 2008-06/2010 crisis
-re-peg regime (R1) has only 8-10 nonzero-surprise event dates depending on
-shock measure/matching rule -- above the 5-event floor this script flags, but
-still thin next to R2 (30-43) and R3 (18-23). Read R1's own-response estimate
-with that in mind even though it clears the floor.
+**China regime split (R/22), R1's event count -- and its leave-one-out
+result.** The 2008-06/2010 crisis re-peg regime (R1) has only 8-10
+nonzero-surprise event dates depending on shock measure/matching rule --
+above the 5-event floor this script flags, but still thin next to R2 (30-43)
+and R3 (18-23). Worse than thin: R1's own significant response (+0.825,
+p=0.006) does NOT survive leave-one-out. Dropping 26 Nov 2008 alone (the RRR
+and benchmark-rate easing response to the global financial crisis, the
+largest-magnitude surprise -- shock_1y=-0.50 -- anywhere in the sample)
+collapses it to +0.019, p=0.969. R2's own response (by contrast, +0.506 at
+baseline, itself not significant) never reaches p<0.05 on any of its 30
+leave-one-out drops -- it was not significant to begin with, so there is
+nothing for one date to be "carrying." Read R1's own-response estimate as
+substantially a single-event result, not a stable feature of the crisis
+re-peg window.
 
 **Zero-surprise placebo (R/25), n = 9.** The in-sample announcement dates with
 an exactly-zero measured 1Y surprise number only 9. R/25 states the
