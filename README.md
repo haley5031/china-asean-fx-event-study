@@ -119,7 +119,7 @@ comment above R/09 in `run_all.R` for the full reasoning behind the order.
 | `23_window_wide.R` | Extends the window-robustness machinery (R/06's plain FE ladder, R/13's regime-interaction grid) to two wider/forward-looking windows, `[-5,+1]` and `[-5,0]` (built in R/10), across both numeraires, both shock measures, and both matching rules. | `output/tables/window_wide_baseline.csv`, `window_wide_regime.csv` | window-robustness appendix follow-up |
 | `24_forward_local_projections.R` | Forward local projections: cumulative `[0,+h]` FX response for h = 0..10, one regression per horizon, country FE, clustered by date, both shock measures. | `output/tables/lp_horizon_response.csv` | window-robustness appendix follow-up |
 | `fig_lp_path.R` | Coefficient-path plot for R/24, with 90% and 95% bands, one panel per shock measure. | `output/figures/fig_lp_coefficient_path.*` | companion figure to R/24 |
-| `25_announcement_dummy_placebo.R` | Two checks on whether the announcement day itself carries information beyond the measured surprise: (A) an announcement-day dummy alongside the continuous shock in the baseline spec; (B) the 9 in-sample announcement dates with an exactly-zero measured surprise, tested as a placebo group, with an explicit minimum-detectable-effect statement given how few dates that is. | `output/tables/announcement_dummy.csv`, `placebo_zero_surprise.csv` | window-robustness appendix follow-up |
+| `25_announcement_dummy_placebo.R` | Two checks on whether the announcement day itself carries information beyond the measured surprise: (A) an announcement-day dummy alongside the continuous shock in the baseline spec; (B) the 9 in-sample announcement dates with an exactly-zero measured surprise, tested as a placebo group. SE=0.042, 95% CI=[-0.043, 0.122], MDE at 80% power = 0.12pp -- smaller than typical daily FX volatility (0.3-0.7%), so this is a reasonably tight null supporting the shock measure's cleanliness, not an underpowered one; the CSV also carries the one legitimate caveat (only 9 treated clusters, so cluster-robust SE's asymptotic justification is on thinner ground than the total cluster count suggests). | `output/tables/announcement_dummy.csv`, `placebo_zero_surprise.csv` | window-robustness appendix follow-up |
 
 `R/11` through `R/17` were originally written as standalone supervisor-response
 scripts (see `docs/RUN_ME_FIRST.md` for the original hand-off notes) and, for
@@ -221,11 +221,20 @@ substantially a single-event result, not a stable feature of the crisis
 re-peg window.
 
 **Zero-surprise placebo (R/25), n = 9.** The in-sample announcement dates with
-an exactly-zero measured 1Y surprise number only 9. R/25 states the
-resulting minimum detectable effect explicitly (roughly 0.12 percentage
-points at conventional power, against typical daily FX moves of 0.3-0.7%):
-treat a null result there as low-powered, not as evidence the measure is
-clean.
+an exactly-zero measured 1Y surprise number only 9. Despite that small count,
+this is a REASONABLY TIGHT null, not an underpowered one: SE=0.042, 95%
+CI=[-0.043, 0.122], and the MDE at 80% power (~0.12pp) is smaller than
+typical daily FX volatility (0.3-0.7%). Read it as evidence for the shock
+measure's cleanliness: announcements it scores as zero-surprise do not move
+ASEAN currencies detectably. The one legitimate caveat is that `is_placebo`
+is 1 on only 9 of the date clusters the SE is computed over, so the
+cluster-robust SE's asymptotic justification rests on those 9 treated
+clusters, not the full cluster count -- worth flagging, but a narrower and
+different concern than "too few dates to be informative," which the numbers
+do not support. (An earlier pass on this branch mischaracterized the MDE as
+"large" relative to daily volatility and concluded the opposite; that was a
+mis-stated comparison, corrected once the actual SE, CI, and MDE were
+computed rather than assumed.)
 
 **The FRED cache.** `R/09` and `R/14` between them download and cache all six
 FRED series into `data-raw/external/`; those six files are committed, so a

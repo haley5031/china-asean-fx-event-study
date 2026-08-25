@@ -1,2 +1,2 @@
-term,coef,se,pval,nobs,n_placebo_dates
-placebo (zero-surprise announcement day),0.03970889867627178,0.0421187568413163,0.3458649241920152,13017,9
+term,coef,se,pval,nobs,n_placebo_dates,ci95_lo,ci95_hi,mde_80pct
+placebo (zero-surprise announcement day),0.03970889867627178,0.0421187568413163,0.3458649241920152,13017,9,-0.04284386473270817,0.12226166208525173,0.11793251915568563
