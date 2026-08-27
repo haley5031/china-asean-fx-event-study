@@ -57,11 +57,12 @@ source("run_all.R")
 ```
 
 This rebuilds `data-clean/` and `output/` from the files in `data-raw/`.
-`run_all.R` now runs every script 01-20 (R/11-17 were wired in later and are
-no longer separate from this list -- see below). In a verification run of
-the current branch, the full 01-20 pipeline completed in 3-6 minutes with no
-errors across two clean-state runs (most of the variation, and most of the
-time either way, is one script, `R/19`, which runs a 2,000-replication
+`run_all.R` now runs every script 01-25 (R/11-17 were wired in later and are
+no longer separate from this list -- see below; R/21-25 are the most recent
+supervisor-response extensions, described in their own section below). In a
+verification run of the current branch, the full 01-25 pipeline completed
+with no errors across clean-state runs (most of the variation, and most of
+the time either way, is one script, `R/19`, which runs a 2,000-replication
 bootstrap; treat "a few minutes" as the realistic expectation rather than
 either single figure). It downloads nothing on that run if the FRED files
 already sitting in `data-raw/external/` are left in place -- delete that
@@ -78,11 +79,11 @@ The "paper exhibit" column below is the label used *inside this codebase* --
 script comments, console messages, and `docs/data_dictionary.md` -- not a
 citation I have cross-checked against the current Overleaf draft. Confirm the
 numbering still matches before citing this table to anyone. Every script
-01-20 is now called by `run_all.R`, in dependency order rather than numeric
+01-25 is now called by `run_all.R`, in dependency order rather than numeric
 order -- they mostly coincide, but not entirely: `R/14` runs before `R/13`
 (R/13's control ladder now uses the AFE dollar control that only R/14
-fetches/caches). See the comment above R/09 in `run_all.R` for the full
-reasoning behind the order.
+fetches/caches), and `R/21` runs after `R/14` for the same reason. See the
+comment above R/09 in `run_all.R` for the full reasoning behind the order.
 
 | Script | What it does | Output | Paper exhibit (as labeled in-code) |
 |---|---|---|---|
@@ -113,6 +114,16 @@ reasoning behind the order.
 | `18_fomc_regime_robustness.R` | Re-estimates the H3 regime interaction excluding event dates within 1 trading day of a scheduled FOMC decision (headline cut), excluding all of 2020, and excluding dates near *any* FOMC meeting including unscheduled ones (sensitivity cut), alongside the baseline. | `output/tables/regime_fomc_2020_robustness.csv` | H3 robustness appendix |
 | `19_mediation_bootstrap.R` | Cluster bootstrap (resampling event dates, 2,000 replications) giving a 95% CI on the mediation path-*b* coefficient and the indirect effect a×b from `R/15`. | `output/tables/mediation_bootstrap.csv`, `mediation_bootstrap_table.tex` | mediation section |
 | `20_heterogeneity_ftest.R` | Joint F-test that Table 3's four country-interaction terms (relative to Indonesia) are all zero, for both shock measures. | `output/tables/heterogeneity_joint_ftest.csv` | H2 robustness |
+| `21_afe_basket_numeraire.R` | A third numeraire: quotes each ASEAN currency against the AFE dollar-index basket (`r_basket = r_usd - D_t`, `D_t` = the AFE index's own return), so coefficients are directly comparable to the USD-quoted tables without either the dollar-anchor problem (unlike LCU/USD) or the renminbi leg (unlike the RMB cross rate, R/11). One consolidated three-leg table (`usd = basket + D`) at `[0,+1]`, both tenors, both matching rules, pre/post/interaction, coefficient+SE+p-value for every leg; verifies the identity numerically; and backs out the implied correlation between the two legs' coefficient estimates from the three observed variances, to show that decomposing the directly-estimated `beta_USD` into two anti-correlated legs costs precision -- a mechanical accounting fact, not a surprising composite. Also compares `beta_D`'s regime interaction at the date level (the natural estimator for a one-series outcome the panel repeats five times) against the panel version. | `output/tables/afe_basket_window_grid.csv`, `afe_basket_three_leg_table.csv`, `afe_basket_identity_check.csv`, `afe_basket_leg_correlation.csv`, `afe_basket_precision_decomposition.csv`, `afe_basket_regime_finding.csv`, `afe_basket_D_date_vs_panel.csv` | third-numeraire robustness (Section 4.5 follow-up) |
+| `22_china_regime_split.R` | Splits the sample into three China exchange-rate regimes (2008-06/2010 crisis re-peg, 06/2010-08/2015 managed float, 08/2015- post-fixing-reform) instead of R/12's two-way pre/post-2015 split. Reports each regime's own response directly, the R2-vs-R1 and R3-vs-R2 differences each estimated directly on its own pairwise subsample (not inferred by subtracting coefficients), and a joint F-test that all three are equal -- for both shock measures and matching rules, with event counts per regime reported first. **R1's own response (+0.825, p=0.006) does not survive a leave-one-out check**: dropping 26 Nov 2008 (the RRR/benchmark-rate easing response to the financial crisis, the largest-magnitude surprise in the sample) alone collapses it to +0.019, p=0.969 -- see the caveat below. | `output/tables/china_regime_event_counts.csv`, `china_regime_own_response.csv`, `china_regime_diffs.csv`, `china_regime_ftest.csv`, `china_regime_r1_r2_leave_one_out.csv`, `china_regime_r1_excl_nov2008.csv` | trilemma/regime robustness (Section 4.7 follow-up) |
+| `23_window_wide.R` | Extends the window-robustness machinery (R/06's plain FE ladder, R/13's regime-interaction grid) to two wider/forward-looking windows, `[-5,+1]` and `[-5,0]` (built in R/10), across both numeraires, both shock measures, and both matching rules. `[-5,+1]`'s USD/1Y interaction (-3.69, p=0.017) is LARGER than the `[0,+1]` baseline (-2.19, p<0.001), but its SE is also 2.35x larger -- the comparison table characterises this as the break SURVIVING the wider window, not as confirming the anticipation mechanism (a bigger coefficient with a proportionally bigger SE is equally consistent with added noise). Only the 1Y/exact/`[-5,+1]` cell stays significant at 5% once the window widens; every other cell in the comparison does not. | `output/tables/window_wide_baseline.csv`, `window_wide_regime.csv`, `window_wide_vs_baseline_comparison.csv` | window-robustness appendix follow-up |
+| `24_forward_local_projections.R` | Forward local projections: cumulative `[0,+h]` FX response for h = 0..10, one regression per horizon, country FE, clustered by date, both shock measures. | `output/tables/lp_horizon_response.csv` | window-robustness appendix follow-up |
+| `fig_lp_path.R` | Coefficient-path plot for R/24, with 90% and 95% bands, one panel per shock measure. | `output/figures/fig_lp_coefficient_path.*` | companion figure to R/24 |
+| `25_announcement_dummy_placebo.R` | Two checks on whether the announcement day itself carries information beyond the measured surprise: (A) an announcement-day dummy alongside the continuous shock in the baseline spec; (B) the 9 in-sample announcement dates with an exactly-zero measured surprise, tested as a placebo group. SE=0.042, 95% CI=[-0.043, 0.122], MDE at 80% power = 0.12pp -- smaller than typical daily FX volatility (0.3-0.7%), so this is a reasonably tight null supporting the shock measure's cleanliness, not an underpowered one; the CSV also carries the one legitimate caveat (only 9 treated clusters, so cluster-robust SE's asymptotic justification is on thinner ground than the total cluster count suggests). | `output/tables/announcement_dummy.csv`, `placebo_zero_surprise.csv` | window-robustness appendix follow-up |
+| `26_regime_interaction_full_loo.R` | R/13 check 3's Appendix B influence check drops only the 18 POST-split events; this extends it to ALL nonzero-surprise events (56/71/61/76 depending on tenor/matching rule, pre AND post), dropped one at a time from `usd_w01 ~ shock * post_split \| country`, reporting both the interaction term and the pre-split main term for every drop. Excluding 26 Nov 2008 (the single date R/22 showed carries 98% of R1's own response) specifically: the regime interaction SURVIVES at 5% in 3 of 4 specifications (1Y exact p=0.008, 1Y rolled p=0.047, 5Y exact p=0.005) and misses narrowly in the fourth (5Y rolled p=0.069, i.e. only 10%-significant). The pre-split main coefficient itself roughly halves (e.g. 1Y exact: +0.678 -> +0.383) but stays positive, because the 38-event pre-split average still includes R2's 30 events even with the single largest one removed. | `output/tables/regime_interaction_full_loo.csv`, `regime_interaction_excl_nov2008.csv` | H3 robustness appendix (Appendix B completion) |
+| `27_instrument_type_excl_nov2008.R` | Confirms 26 Nov 2008 classifies cleanly as `quantity` (isdRRR & isdLDR both TRUE, both quantity flags; isdRevrepo & isdMLF both FALSE) -- not ambiguous between price and quantity. Re-estimates R/17's Table 11 / Equation 9 instrument-type specification (price and quantity, each at pre-split level, post-split level, and post-minus-pre difference -- six cells) with and without that date. **The quantity-response CHANGE across the split, Section 4.7's headline instrument-type claim, does NOT survive**: -0.991 (p=0.031) with all events falls to -0.617 (p=0.250) excluding 26 Nov 2008 -- the same single date drives this result as drives R1's own response. Price-leg cells are unaffected (26 Nov 2008 is a quantity-only event, so `shock_price` on that date is already zero). | `output/tables/instrument_table11_excl_nov2008.csv`, `instrument_nov2008_classification.csv` | instrument-mix section (Section 4.7 dependency check) |
+| `28_outlier_treatment.R` | General outlier treatment (not leave-one-out): re-estimates the baseline average, the regime interaction, and the instrument-type split (price/quantity, at pre-split level, post-split level, post-minus-pre difference, AND the post-split price-minus-quantity difference) under winsorization (shock capped at the 1st/99th pct of its own nonzero EVENT-DATE distribution -- computed on the distinct dates, not the panel-repeated column, which otherwise lands exactly on the extremes with only 56 events and changes nothing) and robust MM-estimation (`robustbase::lmrob`, cluster-bootstrapped by date for inference, B=100, since lmrob has no analytical clustered SE). **Triangulates with R/26's leave-one-out**: the regime interaction survives both treatments in the same 3 of 4 specifications (5Y rolled the exception, p=0.091 robust). The instrument-type quantity CHANGE across the split collapses under robust regression (-0.728, p=0.462-0.72 across reruns, from -0.991, p=0.031 unadjusted), confirming R/27's finding by an independent method. The price-based POST-2015 LEVEL survives all three treatments cleanly (-2.119 to -2.062, p=0.001-0.011). Two post-split-only quantity cells (quantity post-split level; price-minus-quantity post-split) show the coefficient holding up under robust regression but the BOOTSTRAP SE ITSELF becoming numerically unstable (e.g. 0.705 -> 6.39), because only 7 quantity-type events exist post-2015 -- some cluster-bootstrap resamples draw almost no quantity-side variation. Re-running the identical B=100 specification shifted one borderline p-value from 0.067 to 0.034 on Monte Carlo noise alone, disclosed rather than papered over: B=100 is not enough for stable inference on this specific cell, and a higher-B rerun would be needed before treating its significance as settled either way. | `output/tables/outlier_baseline.csv`, `outlier_regime_interaction.csv`, `outlier_instrument_type.csv` | H3/instrument-mix robustness (general outlier check) |
+| `29_draft_reconciliation.R` | Small write-up extracts, no new analysis: (1) three counts touching "71" in the draft -- confirms two of them (raw pre-2015 nonzero events vs. their rolled equivalents) are the SAME 71 events under two date labels (the weekend-announced ones are labelled by announcement date vs. rolled trading day), while the third "71" is a genuine coincidence, a different construction that happens to match; (2) instrument composition of the actual 56-event estimation set vs. the 71-event set, for checking which one a quoted count belongs to; (3) per-country descriptives for `usd_w01` (missing from Table 1) and the AFE dollar factor's `D_w01`; (4) the post-2015 1-SD effect size against the correct two-day `[0,+1]` window SD rather than a daily-return SD. | `output/tables/reconcile_71_counts.csv`, `reconcile_71_roll_diagnosis.csv`, `reconcile_instrument_composition_56.csv`, `descriptive_window_return.csv`, `reconcile_effect_size_ratio.csv` | write-up reconciliation (no new claim) |
 
 `R/11` through `R/17` were originally written as standalone supervisor-response
 scripts (see `docs/RUN_ME_FIRST.md` for the original hand-off notes) and, for
@@ -190,6 +201,87 @@ BLAS/compiler builds, not a bug). It has not changed any digit that is
 actually reported at the precision these tables use. If a fresh run produces
 a difference bigger than that, treat it as a real discrepancy and investigate
 before trusting the new numbers.
+
+**The AFE-basket outcome (R/21) is not the mediation direct effect.** `beta_basket`
+imposes a unit pass-through from the AFE dollar index to the ASEAN outcome
+(`r_basket = r_usd - D_t`), whereas R/15's mediation decomposition ESTIMATES
+that pass-through (`path_b ~ 0.30` post-2015). The two are different objects
+and differ numerically by construction -- `beta_basket` is not a robustness
+check on R/15's direct effect `c'` and should not be read as one.
+
+**China regime split (R/22), R1's event count -- and its leave-one-out
+result.** The 2008-06/2010 crisis re-peg regime (R1) has only 8-10
+nonzero-surprise event dates depending on shock measure/matching rule --
+above the 5-event floor this script flags, but still thin next to R2 (30-43)
+and R3 (18-23). Worse than thin: R1's own significant response (+0.825,
+p=0.006) does NOT survive leave-one-out. Dropping 26 Nov 2008 alone (the RRR
+and benchmark-rate easing response to the global financial crisis, the
+largest-magnitude surprise -- shock_1y=-0.50 -- anywhere in the sample)
+collapses it to +0.019, p=0.969. R2's own response (by contrast, +0.506 at
+baseline, itself not significant) never reaches p<0.05 on any of its 30
+leave-one-out drops -- it was not significant to begin with, so there is
+nothing for one date to be "carrying." Read R1's own-response estimate as
+substantially a single-event result, not a stable feature of the crisis
+re-peg window.
+
+**But the H3 regime INTERACTION (R/26) is more robust than R1's own response.**
+Since the interaction is (post response) minus (pre response), R1's collapse
+raises an obvious question for the interaction itself, not just for R1 in
+isolation. R/26 drops every one of the 56/71/61/76 (tenor x matching rule)
+nonzero-surprise events -- pre AND post, not post only, extending R/13's
+existing post-only influence check -- from the full `shock * post_split`
+specification. Excluding 26 Nov 2008 specifically, the interaction SURVIVES
+at 5% in 3 of 4 specifications (1Y exact p=0.008, 1Y rolled p=0.047, 5Y
+exact p=0.005) and drops to 10%-only significance in the fourth (5Y rolled,
+p=0.069). The pre-split main coefficient itself roughly halves without that
+one date but stays positive (the 38-event pre-split average still includes
+R2's 30 events). Net: the regime break is not solely a 26 Nov 2008 artefact,
+but it is thinner than the baseline p-values alone suggest, and the 5Y
+rolled specification should be reported as only marginally robust to this
+check.
+
+**R/28's outlier treatment triangulates with R/26's leave-one-out, by an
+entirely different method.** Winsorizing the shock at the 1st/99th
+percentile and re-estimating with a robust (MM) estimator instead of
+deleting any date gives the SAME pattern as dropping dates one at a time:
+the regime interaction survives in the same 3 of 4 specifications (1Y
+exact, 1Y rolled, 5Y exact) and is the weakest in the same one (5Y rolled,
+p=0.091 under robust regression). The instrument-type quantity claim
+(R/27) collapses under robust regression too (-0.728, p=0.722, from -0.991,
+p=0.031), corroborating that its leave-one-out fragility is not a
+one-method artefact. A finding NOT visible from leave-one-out alone: the
+price-instrument result also weakens under robust regression (-3.19,
+p=0.067, from -3.66, p=0.014) -- 26 Nov 2008 does not touch the price leg,
+so this fragility comes from elsewhere in the price-side event set and is
+worth its own look before Section 4.7 is finalized.
+
+**Instrument-type quantity claim (R/27) also traces to 26 Nov 2008.** Section
+4.7's claim that the quantity-instrument response changes significantly
+across the 2015 split (-0.991, p=0.031, R/17's `instrument_tests_claim2.csv`)
+is the SAME finding as R1's own response through the shared 26 Nov 2008
+observation (a joint RRR + benchmark-rate/LDR cut, confirmed to classify
+cleanly as `quantity`, not ambiguous between price and quantity). Excluding
+that one date, the change falls to -0.617, p=0.250 -- does not survive. The
+price-instrument results (R/17 Claim 1/2, unaffected by this exclusion since
+26 Nov 2008 carries no price-leg shock) are the ones actually supporting a
+regime-dependent instrument-mix story; the quantity side of that story does
+not hold up once this date is removed.
+
+**Zero-surprise placebo (R/25), n = 9.** The in-sample announcement dates with
+an exactly-zero measured 1Y surprise number only 9. Despite that small count,
+this is a REASONABLY TIGHT null, not an underpowered one: SE=0.042, 95%
+CI=[-0.043, 0.122], and the MDE at 80% power (~0.12pp) is smaller than
+typical daily FX volatility (0.3-0.7%). Read it as evidence for the shock
+measure's cleanliness: announcements it scores as zero-surprise do not move
+ASEAN currencies detectably. The one legitimate caveat is that `is_placebo`
+is 1 on only 9 of the date clusters the SE is computed over, so the
+cluster-robust SE's asymptotic justification rests on those 9 treated
+clusters, not the full cluster count -- worth flagging, but a narrower and
+different concern than "too few dates to be informative," which the numbers
+do not support. (An earlier pass on this branch mischaracterized the MDE as
+"large" relative to daily volatility and concluded the opposite; that was a
+mis-stated comparison, corrected once the actual SE, CI, and MDE were
+computed rather than assumed.)
 
 **The FRED cache.** `R/09` and `R/14` between them download and cache all six
 FRED series into `data-raw/external/`; those six files are committed, so a

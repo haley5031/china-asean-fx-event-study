@@ -1,0 +1,5 @@
+period,price,quantity,set,total
+post,11,7,"56 (estimation set: exact match, 2008-2020, nonzero shock_1y)",18
+pre,15,23,"56 (estimation set: exact match, 2008-2020, nonzero shock_1y)",38
+post,12,7,"71 (any main-set event on a trading day, no year/shock restriction)",19
+pre,19,33,"71 (any main-set event on a trading day, no year/shock restriction)",52

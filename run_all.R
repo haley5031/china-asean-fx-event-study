@@ -49,6 +49,25 @@ message("== 18: FOMC-adjacent + drop-2020 regime robustness =="); source("R/18_f
 message("== 19: mediation cluster bootstrap ==");                 source("R/19_mediation_bootstrap.R")
 message("== 20: heterogeneity joint F-test (H2) ==");             source("R/20_heterogeneity_ftest.R")
 
+# R/21-26: further supervisor-response extensions, all built on R/10's
+# extended panel. R/21 additionally needs the cached AFE dollar index
+# (data-raw/external/DTWEXAFEGS.csv), fetched by R/14 -- same dependency as
+# R/13/R/15/R/19 -- so it runs after R/14. R/22, R/24-26 need only R/10's
+# panel (R/23-24 also need the [-5,+1]/[-5,0] window columns R/10 now
+# builds); R/23 additionally reads output/tables/regime_windows.csv, written
+# by R/13, so it must run after R/13 too (already true numerically). R/26
+# needs only R/10's panel.
+message("== 21: AFE-basket numeraire ==");                        source("R/21_afe_basket_numeraire.R")
+message("== 22: China exchange-rate regime split ==");            source("R/22_china_regime_split.R")
+message("== 23: wide/forward window robustness ==");              source("R/23_window_wide.R")
+message("== 24: forward local projections ==");                   source("R/24_forward_local_projections.R")
+message("== fig_lp: LP coefficient-path plot ==");                source("R/fig_lp_path.R")
+message("== 25: announcement-day dummy + zero-surprise placebo =="); source("R/25_announcement_dummy_placebo.R")
+message("== 26: full leave-one-out on the regime interaction ==="); source("R/26_regime_interaction_full_loo.R")
+message("== 27: instrument-type Table 11, excl. 26 Nov 2008 ==="); source("R/27_instrument_type_excl_nov2008.R")
+message("== 28: outlier treatment (winsorize + robust regression) =="); source("R/28_outlier_treatment.R")
+message("== 29: draft reconciliation (counts, descriptives) ==="); source("R/29_draft_reconciliation.R")
+
 message("== DONE. See data-clean/ and output/. ==")
 
 message("== DONE. See data-clean/ and output/. ==")
