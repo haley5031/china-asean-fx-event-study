@@ -224,32 +224,52 @@ pnl_raw <- build_inst_pnl(SHOCK, panel[[SHOCK]])
 pnl_win <- build_inst_pnl(SHOCK, winsorize_shock(panel, SHOCK))
 
 inst_cells <- function(pnl, treatment_label, use_lmrob = FALSE) {
-  pre <- filter(pnl, post_split == 0)
+  pre  <- filter(pnl, post_split == 0)
+  post <- filter(pnl, post_split == 1)
 
   if (!use_lmrob) {
-    m_pre <- feols(usd_w01 ~ shock_price + shock_qty | country, cluster = ~date, data = pre)
-    m_int <- feols(usd_w01 ~ shock_price + shock_qty + shock_price:post_split +
+    m_pre  <- feols(usd_w01 ~ shock_price + shock_qty | country, cluster = ~date, data = pre)
+    m_post <- feols(usd_w01 ~ shock_price + shock_qty | country, cluster = ~date, data = post)
+    m_int  <- feols(usd_w01 ~ shock_price + shock_qty + shock_price:post_split +
                               shock_qty:post_split + post_split | country,
-                   cluster = ~date, data = pnl)
+                    cluster = ~date, data = pnl)
+    # price MINUS quantity, post-split only, own SE (R/17 Claim-1 style
+    # reparameterisation: shock_1y's own coefficient is the quantity response,
+    # shock_price's is price MINUS quantity, since shock_1y = shock_price + shock_qty)
+    m_diff_post <- feols(usd_w01 ~ shock_1y + shock_price | country, cluster = ~date, data = post)
+
     bind_rows(
-      coef_row(m_pre, "shock_price", "price",    extra = list(treatment = treatment_label, column = "pre-split level")),
-      coef_row(m_pre, "shock_qty",   "quantity", extra = list(treatment = treatment_label, column = "pre-split level")),
-      coef_row(m_int, "shock_price:post_split", "price",    extra = list(treatment = treatment_label, column = "post minus pre")),
-      coef_row(m_int, "shock_qty:post_split",   "quantity", extra = list(treatment = treatment_label, column = "post minus pre"))
+      coef_row(m_pre,  "shock_price", "price",    extra = list(treatment = treatment_label, column = "pre-split level")),
+      coef_row(m_pre,  "shock_qty",   "quantity", extra = list(treatment = treatment_label, column = "pre-split level")),
+      coef_row(m_post, "shock_price", "price",    extra = list(treatment = treatment_label, column = "post-split level")),
+      coef_row(m_post, "shock_qty",   "quantity", extra = list(treatment = treatment_label, column = "post-split level")),
+      coef_row(m_int,  "shock_price:post_split", "price",    extra = list(treatment = treatment_label, column = "post minus pre")),
+      coef_row(m_int,  "shock_qty:post_split",   "quantity", extra = list(treatment = treatment_label, column = "post minus pre")),
+      coef_row(m_diff_post, "shock_price", "price minus quantity", extra = list(treatment = treatment_label, column = "post-split"))
     )
   } else {
-    r_pre <- robust_boot_multi(usd_w01 ~ shock_price + shock_qty + country, pre,
-                               c("shock_price", "shock_qty"), B)
-    r_int <- robust_boot_multi(usd_w01 ~ shock_price + shock_qty + shock_price:post_split +
+    r_pre  <- robust_boot_multi(usd_w01 ~ shock_price + shock_qty + country, pre,
+                                c("shock_price", "shock_qty"), B)
+    r_post <- robust_boot_multi(usd_w01 ~ shock_price + shock_qty + country, post,
+                                c("shock_price", "shock_qty"), B)
+    r_int  <- robust_boot_multi(usd_w01 ~ shock_price + shock_qty + shock_price:post_split +
                                           shock_qty:post_split + post_split + country,
-                               pnl, c("shock_price:post_split", "shock_qty:post_split"), B)
+                                pnl, c("shock_price:post_split", "shock_qty:post_split"), B)
+    r_diff_post <- robust_boot_multi(usd_w01 ~ shock_1y + shock_price + country, post,
+                                     "shock_price", B)
     bind_rows(
       data.frame(treatment = treatment_label, column = "pre-split level",
                  term = c("price", "quantity"),
                  coef = r_pre$coef, se = r_pre$se, pval = r_pre$pval, nobs = r_pre$nobs),
+      data.frame(treatment = treatment_label, column = "post-split level",
+                 term = c("price", "quantity"),
+                 coef = r_post$coef, se = r_post$se, pval = r_post$pval, nobs = r_post$nobs),
       data.frame(treatment = treatment_label, column = "post minus pre",
                  term = c("price", "quantity"),
-                 coef = r_int$coef, se = r_int$se, pval = r_int$pval, nobs = r_int$nobs)
+                 coef = r_int$coef, se = r_int$se, pval = r_int$pval, nobs = r_int$nobs),
+      data.frame(treatment = treatment_label, column = "post-split",
+                 term = "price minus quantity",
+                 coef = r_diff_post$coef, se = r_diff_post$se, pval = r_diff_post$pval, nobs = r_diff_post$nobs)
     )
   }
 }
@@ -259,7 +279,7 @@ instrument <- bind_rows(
   inst_cells(pnl_win, "winsorized (1/99 pct)"),
   inst_cells(pnl_raw, "robust (MM, cluster boot.)", use_lmrob = TRUE)
 ) %>%
-  mutate(column = factor(column, levels = c("pre-split level", "post minus pre"))) %>%
+  mutate(column = factor(column, levels = c("pre-split level", "post-split level", "post minus pre", "post-split"))) %>%
   arrange(term, column, factor(treatment, levels = c("unadjusted", "winsorized (1/99 pct)", "robust (MM, cluster boot.)")))
 
 print(instrument[, c("term", "column", "treatment", "coef", "se", "pval", "nobs")],
